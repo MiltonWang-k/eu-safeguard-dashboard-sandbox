@@ -41,22 +41,16 @@ const POOL_NAMES = new Set([
 ]);
 
 const flagMap = {
-  "Türkiye":"tr", "Japan":"jp", "India":"in", "Taiwan":"tw", "Ukraine":"ua", "Korea":"kr", "Viet Nam":"vn", "Egypt":"eg", "Serbia":"rs",
-  "Brazil":"br", "United Kingdom":"gb", "Indonesia":"id", "Australia":"au", "Saudi Arabia":"sa", "Switzerland":"ch", "Kazakhstan":"kz", "North Macedonia":"mk",
-  "United States":"us", "China":"cn", "South Africa":"za", "Singapore":"sg", "Malaysia":"my", "United Arab Emirates":"ae", "Algeria":"dz", "Moldova":"md"
+  "Australia":"au", "Brazil":"br", "China":"cn", "Egypt":"eg", "India":"in", "Indonesia":"id", "Japan":"jp", "Kazakhstan":"kz", "Korea":"kr", "North Macedonia":"mk", "Saudi Arabia":"sa", "Serbia":"rs", "Singapore":"sg", "South Africa":"za", "Switzerland":"ch", "Taiwan":"tw", "Türkiye":"tr", "Ukraine":"ua", "United Kingdom":"gb", "United Kingdom (to Northern Ireland from other parts of the United Kingdom)":"gb", "United States":"us", "Viet Nam":"vn"
 };
 const escapeHtml = value => String(value ?? "")
-  .replace(/&/g, "&amp;")
-  .replace(/</g, "&lt;")
-  .replace(/>/g, "&gt;")
-  .replace(/"/g, "&quot;");
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const countryLabel = name => String(name ?? "");
 const flagMarkup = name => {
   const code = flagMap[name];
-  return code ? `<img class="flag" src="https://flagcdn.com/${code}.svg" width="24" height="18" alt="" aria-hidden="true">` : "";
+  return code ? `<img class="flag" src="./flags/${code}.svg" width="24" height="18" alt="" aria-hidden="true">` : "";
 };
 const displayCountry = name => `${flagMarkup(name)}<span>${escapeHtml(countryLabel(name))}</span>`;
-
 const normalizePool = value => String(value || '').replace(/–/g,'-').trim();
 
 function fmtDuty(value){
@@ -91,17 +85,8 @@ function defaultQuarter(){
 }
 
 function fillSelect(element, values, current) {
-  const safe = value =>
-    String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-  element.innerHTML = values
-    .map(value => `<option value="${safe(value)}">${safe(value)}</option>`)
-    .join("");
-
+  const safe = value => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  element.innerHTML = values.map(value => `<option value="${safe(value)}">${safe(value)}</option>`).join("");
   element.value = values.includes(current) ? current : values[0];
   return element.value;
 }
@@ -235,7 +220,7 @@ function openDrawer(row) {
     </div>
   `;
 
-  els.drawerSubtitle.textContent = `${row.productNo} · ${countryLabel(row.country)} · ${row.quarter}`;
+  els.drawerSubtitle.textContent = `${row.productNo} · ${row.country} · ${row.quarter}`;
   document.getElementById('drawerTitle').textContent = row.product;
   els.drawerBody.innerHTML = `<div class="access-stack">${sections.join('')}</div>${details}${row.notes ? `<div class="detail-card"><div class="detail-label">Notes</div><div>${row.notes}</div></div>` : ''}`;
   els.drawer.classList.add('open');
@@ -255,11 +240,11 @@ function renderTable(rows) {
     <tr data-id="${row.id}">
       <td data-label="Product">${escapeHtml(row.product)}</td>
       <td data-label="Quarter" class="mono">${escapeHtml(row.quarter)}</td>
-      <td data-label="Country / quota pool"><div class="country-cell">${displayCountry(row.country)}${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${escapeHtml(row.accessChange)}</span>` : ''}</div></td>
+      <td data-label="Country / quota pool"><div class="country-cell">${displayCountry(row.country)}${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ''}</div></td>
       <td data-label="Allocation" class="mono">${fmtTonnes(row.allocation)}</td>
       <td data-label="YoY"><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td>
       <td data-label="Additional duty" class="mono">${fmtDuty(row.dutyRate)}</td>
-      <td data-label="Order number" class="mono">${escapeHtml(row.orderNumber || '—')}</td>
+      <td data-label="Order number" class="mono">${row.orderNumber || '—'}</td>
     </tr>
   `).join('');
 }
@@ -284,9 +269,14 @@ function renderKPIs(rows) {
 function refreshFilters() {
   state.product = fillSelect(els.productFilter, uniqueValues("product", "All product categories"), state.product);
   state.quarter = fillSelect(els.quarterFilter, ["All quarters", ...availableQuarters()], state.quarter);
-  const options = availableCountriesForMainFilters();
-  if (!options.includes(state.country)) state.country = "All countries / quota pools";
-  state.country = fillSelect(els.countryFilter, options, state.country);
+  let options = availableCountriesForMainFilters();
+  if (state.country !== "All countries / quota pools" && !options.includes(state.country)) {
+    options = [...options, state.country];
+  }
+  state.country = fillSelect(els.countryFilter, options.map(displayCountryText), displayCountryText(state.country));
+  const selectedText = els.countryFilter.value;
+  const matched = options.find(name => displayCountryText(name) === selectedText);
+  state.country = matched || "All countries / quota pools";
 }
 
 function render() {
@@ -296,44 +286,55 @@ function render() {
 }
 
 async function init() {
-  const res = await fetch('./data.json');
-  dataset = await res.json();
-  document.documentElement.setAttribute('data-theme', state.theme);
-  state.quarter = defaultQuarter();
-  refreshFilters();
-  render();
-
-  els.productFilter.addEventListener('change', e => { state.product = e.target.value; state.quarter = 'All quarters'; refreshFilters(); render(); });
-  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; refreshFilters(); render(); });
-  els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
-
-  document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
-    const key = btn.dataset.sort;
-    if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-    else { state.sortKey = key; state.sortDir = 'desc'; }
-    render();
-  }));
-
-  els.tableBody.addEventListener('click', e => {
-    const tr = e.target.closest('tr[data-id]');
-    if (!tr) return;
-    const row = dataset.find(r => String(r.id) === tr.dataset.id);
-    if (row) openDrawer(row);
-  });
-
-  [els.currentTop5, els.nextTop5].forEach(el => el.addEventListener('click', e => {
-    const btn = e.target.closest('[data-id]');
-    if (!btn) return;
-    const row = dataset.find(r => String(r.id) === btn.dataset.id);
-    if (row) openDrawer(row);
-  }));
-
-  els.drawerBackdrop.addEventListener('click', closeDrawer);
-  els.drawerClose.addEventListener('click', closeDrawer);
-  els.themeToggle.addEventListener('click', () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  try {
+    const res = await fetch('./data.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status} while loading data.json`);
+    dataset = await res.json();
+    if (!Array.isArray(dataset) || !dataset.length) throw new Error('data.json is empty or invalid');
     document.documentElement.setAttribute('data-theme', state.theme);
-  });
+    state.quarter = defaultQuarter();
+    refreshFilters();
+    render();
+
+    els.productFilter.addEventListener('change', e => { state.product = e.target.value; state.quarter = 'All quarters'; refreshFilters(); render(); });
+    els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; refreshFilters(); render(); });
+    els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
+
+    document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
+      const key = btn.dataset.sort;
+      if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortKey = key; state.sortDir = 'desc'; }
+      render();
+    }));
+
+    els.tableBody.addEventListener('click', e => {
+      const tr = e.target.closest('tr[data-id]');
+      if (!tr) return;
+      const row = dataset.find(r => String(r.id) === tr.dataset.id);
+      if (row) openDrawer(row);
+    });
+
+    [els.currentTop5, els.nextTop5].forEach(el => el.addEventListener('click', e => {
+      const btn = e.target.closest('[data-id]');
+      if (!btn) return;
+      const row = dataset.find(r => String(r.id) === btn.dataset.id);
+      if (row) openDrawer(row);
+    }));
+
+    els.drawerBackdrop.addEventListener('click', closeDrawer);
+    els.drawerClose.addEventListener('click', closeDrawer);
+    els.themeToggle.addEventListener('click', () => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', state.theme);
+    });
+  } catch (error) {
+    console.error('Init failed:', error);
+    els.resultCount.textContent = '0';
+    els.tableBody.innerHTML = `<tr><td colspan="7">Data failed to load: ${escapeHtml(error.message)}</td></tr>`;
+    [els.productFilter, els.quarterFilter, els.countryFilter].forEach(el => {
+      el.innerHTML = '<option>Load error</option>';
+    });
+  }
 }
 
 init();
