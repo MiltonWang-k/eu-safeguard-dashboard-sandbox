@@ -286,7 +286,7 @@ async function init() {
   refreshFilters();
   render();
 
-  els.productFilter.addEventListener('change', e => { state.product = e.target.value; refreshFilters(); render(); });
+  els.productFilter.addEventListener('change', e => { state.product = e.target.value; render(); });
   els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; render(); });
   els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
 
