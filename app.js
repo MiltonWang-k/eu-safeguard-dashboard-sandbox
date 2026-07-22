@@ -41,23 +41,22 @@ const POOL_NAMES = new Set([
 ]);
 
 const flagMap = {
-  "Türkiye":"🇹🇷","Japan":"🇯🇵","India":"🇮🇳","Taiwan":"🇹🇼","Ukraine":"🇺🇦","Korea":"🇰🇷","Viet Nam":"🇻🇳","Egypt":"🇪🇬","Serbia":"🇷🇸",
-  "Brazil":"🇧🇷","United Kingdom":"🇬🇧","Indonesia":"🇮🇩","Australia":"🇦🇺","Saudi Arabia":"🇸🇦","Switzerland":"🇨🇭","Kazakhstan":"🇰🇿","North Macedonia":"🇲🇰",
-  "United States":"🇺🇸","China":"🇨🇳","South Africa":"🇿🇦","Singapore":"🇸🇬","Malaysia":"🇲🇾","United Arab Emirates":"🇦🇪","Algeria":"🇩🇿","Moldova":"🇲🇩"
+  "Türkiye":"tr", "Japan":"jp", "India":"in", "Taiwan":"tw", "Ukraine":"ua", "Korea":"kr", "Viet Nam":"vn", "Egypt":"eg", "Serbia":"rs",
+  "Brazil":"br", "United Kingdom":"gb", "Indonesia":"id", "Australia":"au", "Saudi Arabia":"sa", "Switzerland":"ch", "Kazakhstan":"kz", "North Macedonia":"mk",
+  "United States":"us", "China":"cn", "South Africa":"za", "Singapore":"sg", "Malaysia":"my", "United Arab Emirates":"ae", "Algeria":"dz", "Moldova":"md"
 };
+const escapeHtml = value => String(value ?? "")
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;");
+const countryLabel = name => String(name ?? "");
+const flagMarkup = name => {
+  const code = flagMap[name];
+  return code ? `<img class="flag" src="https://flagcdn.com/${code}.svg" width="24" height="18" alt="" aria-hidden="true">` : "";
+};
+const displayCountry = name => `${flagMarkup(name)}<span>${escapeHtml(countryLabel(name))}</span>`;
 
-const fmtTonnes = value => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value || 0)} mt`;
-const fmtYoY = value => value === null || value === undefined || Number.isNaN(value) ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
-const badgeClass = value => !value ? "" : /removed|changed/i.test(value) ? "structure" : "neutral";
-const yoyClass = value => value === null || value === undefined ? "neutral" : value > 0 ? "up" : value < 0 ? "down" : "neutral";
-const uniqueValues = (key, label) => [label, ...new Set(dataset.map(row => row[key]).filter(Boolean))];
-function availableCountriesForMainFilters() {
-  return ["All countries / quota pools", ...new Set(dataset
-    .filter(row => (state.product === "All product categories" || row.product === state.product) && (state.quarter === "All quarters" || row.quarter === state.quarter))
-    .map(row => row.country).filter(Boolean))];
-}
-const isPool = name => POOL_NAMES.has(name);
-const displayCountry = name => isPool(name) ? name : `${flagMap[name] || "🌍"} ${name}`;
 const normalizePool = value => String(value || '').replace(/–/g,'-').trim();
 
 function fmtDuty(value){
@@ -147,7 +146,7 @@ function renderTop5(container, rows) {
     container.innerHTML = `<div class="rank-card"><div class="rank-title">No data</div><div class="rank-meta">No allocations for this quarter.</div></div>`;
     return;
   }
-  const top = [...rows].sort((a,b)=>b.allocation-a.allocation).slice(0,5);
+  const top = [...rows].filter(row => !isPool(row.country)).sort((a,b)=>b.allocation-a.allocation).slice(0,5);
   container.innerHTML = top.map((row, idx) => `
     <button class="rank-card" type="button" data-id="${row.id}">
       <div class="rank-top">
@@ -236,7 +235,7 @@ function openDrawer(row) {
     </div>
   `;
 
-  els.drawerSubtitle.textContent = `${row.productNo} · ${displayCountry(row.country)} · ${row.quarter}`;
+  els.drawerSubtitle.textContent = `${row.productNo} · ${countryLabel(row.country)} · ${row.quarter}`;
   document.getElementById('drawerTitle').textContent = row.product;
   els.drawerBody.innerHTML = `<div class="access-stack">${sections.join('')}</div>${details}${row.notes ? `<div class="detail-card"><div class="detail-label">Notes</div><div>${row.notes}</div></div>` : ''}`;
   els.drawer.classList.add('open');
@@ -254,13 +253,13 @@ function renderTable(rows) {
   els.resultCount.textContent = String(rows.length);
   els.tableBody.innerHTML = rows.map(row => `
     <tr data-id="${row.id}">
-      <td>${row.product}</td>
-      <td class="mono">${row.quarter}</td>
-      <td><div class="country-cell"><span>${displayCountry(row.country)}</span>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ''}</div></td>
-      <td class="mono">${fmtTonnes(row.allocation)}</td>
-      <td><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td>
-      <td class="mono">${fmtDuty(row.dutyRate)}</td>
-      <td class="mono">${row.orderNumber || '—'}</td>
+      <td data-label="Product">${escapeHtml(row.product)}</td>
+      <td data-label="Quarter" class="mono">${escapeHtml(row.quarter)}</td>
+      <td data-label="Country / quota pool"><div class="country-cell">${displayCountry(row.country)}${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${escapeHtml(row.accessChange)}</span>` : ''}</div></td>
+      <td data-label="Allocation" class="mono">${fmtTonnes(row.allocation)}</td>
+      <td data-label="YoY"><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td>
+      <td data-label="Additional duty" class="mono">${fmtDuty(row.dutyRate)}</td>
+      <td data-label="Order number" class="mono">${escapeHtml(row.orderNumber || '—')}</td>
     </tr>
   `).join('');
 }
@@ -304,8 +303,8 @@ async function init() {
   refreshFilters();
   render();
 
-  els.productFilter.addEventListener('change', e => { state.product = e.target.value; state.quarter = 'All quarters'; state.country = 'All countries / quota pools'; refreshFilters(); render(); });
-  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; state.country = 'All countries / quota pools'; refreshFilters(); render(); });
+  els.productFilter.addEventListener('change', e => { state.product = e.target.value; state.quarter = 'All quarters'; refreshFilters(); render(); });
+  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; refreshFilters(); render(); });
   els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
 
   document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
