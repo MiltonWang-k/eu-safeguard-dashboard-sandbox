@@ -12,8 +12,42 @@
 @media (max-width:380px){.kpis{grid-template-columns:1fr}}
 
 
-.country-name { display:inline-flex; align-items:center; gap:8px; }
-.country-flag { width:22px; height:16px; object-fit:cover; border-radius:3px; box-shadow:0 0 0 1px color-mix(in srgb,var(--border) 75%,transparent); flex:0 0 auto; }
-.site-footer { padding:20px; text-align:center; color:var(--muted); font-size:.9rem; }
-.status-message { margin:20px; padding:14px; border-radius:12px; background:color-mix(in srgb,var(--danger) 12%,var(--surface)); color:var(--text); }
-@media (max-width:720px){ .country-flag{width:20px;height:15px} .site-footer{padding:16px 12px 28px} }
+/* Mobile hotfix — keep every dashboard section inside the phone viewport. */
+@media (max-width: 720px) {
+  html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .topbar { padding: 12px; align-items: flex-start; flex-direction: column; gap: 12px; }
+  .brand { width: 100%; align-items: flex-start; }
+  .brand h1 { font-size: 1.15rem; }
+  .brand p { font-size: .82rem; }
+  .top-actions { width: 100%; }
+  .top-actions .btn { width: 100%; }
+  .main { padding: 12px; gap: 12px; min-width: 0; max-width: 100%; }
+  .card { padding: 14px; min-width: 0; max-width: 100%; }
+  .filters, .kpis, .two-col, .method-grid, .detail-grid { grid-template-columns: minmax(0, 1fr) !important; min-width: 0; }
+  .kpis { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 10px; }
+  .kpi { padding: 10px; border: 1px solid color-mix(in srgb,var(--border) 70%,transparent); border-radius: 12px; background: var(--surface-2); }
+  .kpi-value { font-size: 1.35rem; }
+  .section-head { align-items: flex-start; gap: 8px; }
+  .table-wrap { overflow: visible; }
+  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; width: 100%; min-width: 0 !important; }
+  .table-wrap thead { display: none; }
+  .table-wrap tr { margin-bottom: 12px; padding: 4px 14px; border: 1px solid color-mix(in srgb,var(--border) 70%,transparent); border-radius: 12px; background: var(--surface-2); }
+  .table-wrap td { display: grid; grid-template-columns: minmax(108px,.9fr) minmax(0,1.25fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid color-mix(in srgb,var(--border) 55%,transparent); overflow-wrap: anywhere; }
+  .table-wrap td:last-child { border-bottom: 0; }
+  .table-wrap td::before { color: var(--muted); font-size: .78rem; font-weight: 700; line-height: 1.35; }
+  .table-wrap td:nth-child(1)::before { content: "Product category"; }
+  .table-wrap td:nth-child(2)::before { content: "Quarter"; }
+  .table-wrap td:nth-child(3)::before { content: "Country / quota pool"; }
+  .table-wrap td:nth-child(4)::before { content: "Allocated quota"; }
+  .table-wrap td:nth-child(5)::before { content: "YoY"; }
+  .table-wrap td:nth-child(6)::before { content: "Additional duty"; }
+  .table-wrap td:nth-child(7)::before { content: "Order number"; }
+  .drawer { width: 100vw; border-left: 0; }
+  .drawer-head, .drawer-body { padding: 16px; }
+  .country-flag { width: 20px; height: 15px; }
+  .site-footer { padding: 16px 12px 28px; }
+}
+@media (max-width: 380px) {
+  .kpis { grid-template-columns: 1fr !important; }
+  .table-wrap td { grid-template-columns: 1fr; gap: 3px; }
+}
