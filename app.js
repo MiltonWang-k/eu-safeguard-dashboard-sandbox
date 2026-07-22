@@ -1,29 +1,322 @@
-const state = { product: "All product categories", quarter: "All quarters", country: "All countries / quota pools", sortKey: "allocation", sortDir: "desc", theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light" };
+
+const state = {
+  product: "All product categories",
+  quarter: "All quarters",
+  country: "All countries / quota pools",
+  sortKey: "allocation",
+  sortDir: "desc",
+  theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+};
+
 let dataset = [];
-const els = { productFilter: document.getElementById("productFilter"), quarterFilter: document.getElementById("quarterFilter"), countryFilter: document.getElementById("countryFilter"), tableBody: document.getElementById("tableBody"), resultCount: document.getElementById("resultCount"), kpiRows: document.getElementById("kpiRows"), kpiCurrent: document.getElementById("kpiCurrent"), kpiNext: document.getElementById("kpiNext"), kpiChanges: document.getElementById("kpiChanges"), currentTop5: document.getElementById("currentTop5"), nextTop5: document.getElementById("nextTop5"), currentQuarterLabel: document.getElementById("currentQuarterLabel"), nextQuarterLabel: document.getElementById("nextQuarterLabel"), drawer: document.getElementById("drawer"), drawerBackdrop: document.getElementById("drawerBackdrop"), drawerBody: document.getElementById("drawerBody"), drawerSubtitle: document.getElementById("drawerSubtitle") };
-const fmtTonnes = value => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value || 0)} t`;
+
+const els = {
+  productFilter: document.getElementById("productFilter"),
+  quarterFilter: document.getElementById("quarterFilter"),
+  countryFilter: document.getElementById("countryFilter"),
+  tableBody: document.getElementById("tableBody"),
+  resultCount: document.getElementById("resultCount"),
+  kpiRows: document.getElementById("kpiRows"),
+  kpiCurrent: document.getElementById("kpiCurrent"),
+  kpiNext: document.getElementById("kpiNext"),
+  kpiChanges: document.getElementById("kpiChanges"),
+  currentTop5: document.getElementById("currentTop5"),
+  nextTop5: document.getElementById("nextTop5"),
+  currentQuarterLabel: document.getElementById("currentQuarterLabel"),
+  nextQuarterLabel: document.getElementById("nextQuarterLabel"),
+  drawer: document.getElementById("drawer"),
+  drawerBackdrop: document.getElementById("drawerBackdrop"),
+  drawerBody: document.getElementById("drawerBody"),
+  drawerSubtitle: document.getElementById("drawerSubtitle"),
+  themeToggle: document.getElementById("themeToggle"),
+  drawerClose: document.getElementById("drawerClose")
+};
+
+const POOL_NAMES = new Set([
+  "Other countries",
+  "FTA Quota – Other countries",
+  "FTA Quota - Other countries",
+  "FTA Quota – CSQ",
+  "FTA Quota - CSQ"
+]);
+
+const flagMap = {
+  "Türkiye":"🇹🇷","Japan":"🇯🇵","India":"🇮🇳","Taiwan":"🇹🇼","Ukraine":"🇺🇦","Korea":"🇰🇷","Viet Nam":"🇻🇳","Egypt":"🇪🇬","Serbia":"🇷🇸",
+  "Brazil":"🇧🇷","United Kingdom":"🇬🇧","Indonesia":"🇮🇩","Australia":"🇦🇺","Saudi Arabia":"🇸🇦","Switzerland":"🇨🇭","Kazakhstan":"🇰🇿","North Macedonia":"🇲🇰",
+  "United States":"🇺🇸","China":"🇨🇳","South Africa":"🇿🇦","Singapore":"🇸🇬","Malaysia":"🇲🇾","United Arab Emirates":"🇦🇪","Algeria":"🇩🇿","Moldova":"🇲🇩"
+};
+
+const fmtTonnes = value => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value || 0)} mt`;
 const fmtYoY = value => value === null || value === undefined || Number.isNaN(value) ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 const badgeClass = value => !value ? "" : /removed|changed/i.test(value) ? "structure" : "neutral";
 const yoyClass = value => value === null || value === undefined ? "neutral" : value > 0 ? "up" : value < 0 ? "down" : "neutral";
-function uniqueValues(key, label) { return [label, ...new Set(dataset.map(row => row[key]).filter(Boolean))]; }
-function fillSelect(element, values, current) { element.innerHTML = values.map(value => `<option value="${value}">${value}</option>`).join(""); element.value = current; }
-function filteredRows() { return dataset.filter(row => (state.product === "All product categories" || row.product === state.product) && (state.quarter === "All quarters" || row.quarter === state.quarter) && (state.country === "All countries / quota pools" || row.country === state.country)); }
-function sortedRows(rows) { const direction = state.sortDir === "asc" ? 1 : -1; return [...rows].sort((a, b) => { const values = { product: [a.product, b.product], quarter: [a.quarter, b.quarter], country: [a.country, b.country], allocation: [a.allocation, b.allocation], yoy: [a.yoy ?? -999, b.yoy ?? -999], duty: [Number(a.dutyRate) || 0, Number(b.dutyRate) || 0], order: [a.orderNumber || "", b.orderNumber || ""] }; const [left, right] = values[state.sortKey]; return typeof left === "number" && typeof right === "number" ? (left - right) * direction : String(left).localeCompare(String(right)) * direction; }); }
-function getQuarterLabels(rows) { const quarters = [...new Set(rows.map(row => row.quarter))].sort(); return { current: quarters[0] || "2026-Q3", next: quarters[1] || "2026-Q4" }; }
-function renderTop5(container, rows, label) { if (!rows.length) { container.innerHTML = `<div class="rank-card"><div class="rank-title">No rows in this filter.</div></div>`; return; } container.innerHTML = rows.slice(0, 5).map((row, index) => `<div class="rank-card" data-open-row="${row.id}"><div class="rank-top"><div><div class="rank-meta">#${index + 1} · ${label}</div><div class="rank-title">${row.country}</div></div><div class="mono">${fmtTonnes(row.allocation)}</div></div><div class="rank-meta">${row.productNo} · ${row.quotaPool}</div><div>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : `<span class="badge ${yoyClass(row.yoy)}">YoY ${fmtYoY(row.yoy)}</span>`}</div></div>`).join(""); }
-function tableRow(row) { const showTip = ["FTA Quota CSQ", "FTA Quota Other countries", "Other countries"].includes(row.quotaPool); return `<tr data-open-row="${row.id}"><td>${row.productNo}<br><span class="muted">${row.product.split(" ").slice(1).join(" ")}</span></td><td class="mono">${row.quarter}</td><td><div class="country-cell"><span>${row.country}</span>${showTip ? `<span class="help">*<span class="tooltip">${row.quotaTooltip || "Add Annex-based eligibility notes here."}</span></span>` : ""}${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ""}</div><div class="muted">${row.quotaPool}</div></td><td class="mono">${fmtTonnes(row.allocation)}</td><td><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td><td class="mono">${row.dutyRate}</td><td class="mono">${row.orderNumber || "—"}</td></tr>`; }
-function renderTable(rows) { els.tableBody.innerHTML = rows.length ? rows.map(tableRow).join("") : `<tr><td colspan="7">No rows match the current filters.</td></tr>`; }
-function updateKPIs(rows) { const current = rows.filter(row => row.currentOrNext === "current"); const next = rows.filter(row => row.currentOrNext === "next"); els.kpiRows.textContent = rows.length; els.kpiCurrent.textContent = fmtTonnes(current.reduce((sum, row) => sum + (row.allocation || 0), 0)); els.kpiNext.textContent = fmtTonnes(next.reduce((sum, row) => sum + (row.allocation || 0), 0)); els.kpiChanges.textContent = rows.filter(row => row.accessChange).length; els.resultCount.textContent = `${rows.length} rows`; }
-function renderDashboard() { const rows = sortedRows(filteredRows()); const { current, next } = getQuarterLabels(rows); els.currentQuarterLabel.textContent = current; els.nextQuarterLabel.textContent = next; renderTop5(els.currentTop5, rows.filter(row => row.quarter === current).sort((a, b) => b.allocation - a.allocation), current); renderTop5(els.nextTop5, rows.filter(row => row.quarter === next).sort((a, b) => b.allocation - a.allocation), next); renderTable(rows); updateKPIs(rows); }
-function openDrawer(id) { const row = dataset.find(item => item.id === Number(id)); if (!row) return; document.getElementById("drawerTitle").textContent = row.country; els.drawerSubtitle.textContent = `${row.productNo} · ${row.quarter} · ${row.quotaPool}`; els.drawerBody.innerHTML = `<div>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : `<span class="badge neutral">Comparable quota path</span>`}</div><p class="muted">${row.notes || ""}</p><div class="detail-grid"><div class="detail-card"><div class="detail-label">Allocated quota</div><div class="detail-value mono">${fmtTonnes(row.allocation)}</div></div><div class="detail-card"><div class="detail-label">Prior-year quarter</div><div class="detail-value mono">${row.compareQuarter || "—"}</div></div><div class="detail-card"><div class="detail-label">Prior-year allocation</div><div class="detail-value mono">${row.priorAllocation ? fmtTonnes(row.priorAllocation) : "—"}</div></div><div class="detail-card"><div class="detail-label">Additional duty</div><div class="detail-value mono">${row.dutyRate}</div></div><div class="detail-card"><div class="detail-label">Order number</div><div class="detail-value mono">${row.orderNumber || "—"}</div></div><div class="detail-card"><div class="detail-label">Quota pool</div><div class="detail-value">${row.quotaPool}</div></div></div><div><div class="detail-label">Quota-pool note</div><div class="detail-value">${row.quotaTooltip || ""}</div></div>`; els.drawer.classList.add("open"); els.drawerBackdrop.classList.add("open"); els.drawer.setAttribute("aria-hidden", "false"); }
-function closeDrawer() { els.drawer.classList.remove("open"); els.drawerBackdrop.classList.remove("open"); els.drawer.setAttribute("aria-hidden", "true"); }
-function initFilters() { fillSelect(els.productFilter, uniqueValues("product", "All product categories"), state.product); fillSelect(els.quarterFilter, uniqueValues("quarter", "All quarters"), state.quarter); fillSelect(els.countryFilter, uniqueValues("country", "All countries / quota pools"), state.country); }
-function setTheme(theme) { state.theme = theme; document.documentElement.setAttribute("data-theme", theme); document.getElementById("themeToggle").textContent = theme === "dark" ? "Light mode" : "Dark mode"; }
-async function loadDataset() { const response = await fetch("./data.json"); if (!response.ok) throw new Error("Failed to load data.json"); dataset = await response.json(); }
-document.getElementById("themeToggle").addEventListener("click", () => setTheme(state.theme === "dark" ? "light" : "dark"));
-document.getElementById("resetFilters").addEventListener("click", () => { state.product = "All product categories"; state.quarter = "All quarters"; state.country = "All countries / quota pools"; state.sortKey = "allocation"; state.sortDir = "desc"; initFilters(); renderDashboard(); });
-[els.productFilter, els.quarterFilter, els.countryFilter].forEach((element, index) => element.addEventListener("change", event => { if (index === 0) state.product = event.target.value; if (index === 1) state.quarter = event.target.value; if (index === 2) state.country = event.target.value; renderDashboard(); }));
-document.querySelectorAll("[data-sort]").forEach(button => button.addEventListener("click", () => { const key = button.dataset.sort; if (state.sortKey === key) state.sortDir = state.sortDir === "asc" ? "desc" : "asc"; else { state.sortKey = key; state.sortDir = ["product", "quarter", "country", "order"].includes(key) ? "asc" : "desc"; } renderDashboard(); }));
-document.addEventListener("click", event => { const target = event.target.closest("[data-open-row]"); if (target) openDrawer(target.dataset.openRow); });
-document.getElementById("closeDrawer").addEventListener("click", closeDrawer); els.drawerBackdrop.addEventListener("click", closeDrawer); document.addEventListener("keydown", event => { if (event.key === "Escape") closeDrawer(); });
-(async () => { setTheme(state.theme); await loadDataset(); initFilters(); renderDashboard(); })().catch(error => { console.error(error); alert("Failed to load dashboard data. Check data.json path and file contents."); });
+const uniqueValues = (key, label) => [label, ...new Set(dataset.map(row => row[key]).filter(Boolean))];
+const isPool = name => POOL_NAMES.has(name);
+const displayCountry = name => isPool(name) ? name : `${flagMap[name] || "🌍"} ${name}`;
+const normalizePool = value => String(value || '').replace(/–/g,'-').trim();
+
+function fmtDuty(value){
+  if (value === null || value === undefined || value === '') return '—';
+  const raw = String(value).trim();
+  if (raw.endsWith('%')) return raw;
+  const n = Number(raw);
+  if (Number.isNaN(n)) return raw;
+  return `${(n <= 1 ? n * 100 : n).toFixed(((n <= 1 ? n * 100 : n) % 1) ? 1 : 0)}%`;
+}
+
+function parseQuarter(q){
+  const m = /^([0-9]{4})-Q([1-4])$/.exec(String(q || ''));
+  if (!m) return null;
+  return {year:Number(m[1]), quarter:Number(m[2])};
+}
+function nextQuarter(q){
+  const p = parseQuarter(q);
+  if (!p) return null;
+  return p.quarter === 4 ? `${p.year + 1}-Q1` : `${p.year}-Q${p.quarter + 1}`;
+}
+function availableQuarters(){
+  return [...new Set(dataset.map(r => r.quarter))].sort((a,b)=>{
+    const pa=parseQuarter(a), pb=parseQuarter(b);
+    if(!pa || !pb) return String(a).localeCompare(String(b));
+    return pa.year - pb.year || pa.quarter - pb.quarter;
+  });
+}
+function defaultQuarter(){
+  const qs = availableQuarters();
+  return qs[0] || '2026-Q3';
+}
+
+function fillSelect(element, values, current) {
+  element.innerHTML = values.map(value => `<option value="${String(value).replace(/"/g,'&quot;')}">${value}</option>`).join('');
+  element.value = current;
+}
+
+function filteredRows() {
+  return dataset.filter(row =>
+    (state.product === "All product categories" || row.product === state.product) &&
+    (state.quarter === "All quarters" || row.quarter === state.quarter) &&
+    (state.country === "All countries / quota pools" || row.country === state.country)
+  );
+}
+
+function baseRowsForQuarter(quarter){
+  return dataset.filter(row =>
+    (state.product === "All product categories" || row.product === state.product) &&
+    row.quarter === quarter &&
+    (state.country === "All countries / quota pools" || row.country === state.country)
+  );
+}
+
+function sortedRows(rows) {
+  const direction = state.sortDir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const values = {
+      product: [a.product, b.product],
+      quarter: [a.quarter, b.quarter],
+      country: [a.country, b.country],
+      allocation: [a.allocation, b.allocation],
+      yoy: [a.yoy ?? -999, b.yoy ?? -999],
+      duty: [Number(String(a.dutyRate).replace('%','')) || 0, Number(String(b.dutyRate).replace('%','')) || 0],
+      order: [a.orderNumber || "", b.orderNumber || ""]
+    };
+    const [left, right] = values[state.sortKey];
+    return typeof left === "number" && typeof right === "number"
+      ? (left - right) * direction
+      : String(left).localeCompare(String(right)) * direction;
+  });
+}
+
+function renderTop5(container, rows) {
+  if (!rows.length) {
+    container.innerHTML = `<div class="rank-card"><div class="rank-title">No data</div><div class="rank-meta">No allocations for this quarter.</div></div>`;
+    return;
+  }
+  const top = [...rows].sort((a,b)=>b.allocation-a.allocation).slice(0,5);
+  container.innerHTML = top.map((row, idx) => `
+    <button class="rank-card" type="button" data-id="${row.id}">
+      <div class="rank-top">
+        <div>
+          <div class="rank-title">${idx + 1}. ${displayCountry(row.country)}</div>
+          <div class="rank-meta">${row.productNo} · ${row.quarter}</div>
+        </div>
+        <div class="rank-title mono">${fmtTonnes(row.allocation)}</div>
+      </div>
+      <div class="rank-meta">${row.quotaPool} · Duty ${fmtDuty(row.dutyRate)}</div>
+    </button>
+  `).join('');
+}
+
+function sameProductQuarter(row, quarter){
+  return dataset.filter(r => r.product === row.product && r.quarter === quarter);
+}
+
+function findPoolRow(product, quarter, poolNames){
+  const names = Array.isArray(poolNames) ? poolNames : [poolNames];
+  return dataset.find(r => r.product === product && r.quarter === quarter && names.some(n => normalizePool(r.country) === normalizePool(n)));
+}
+
+function shouldShowCountrySpecific(row){
+  return !isPool(row.country);
+}
+
+function openDrawer(row) {
+  const q = row.quarter;
+  const product = row.product;
+  const allThisQuarter = sameProductQuarter(row, q);
+  const additionalRow = findPoolRow(product, q, ["FTA Quota – CSQ", "FTA Quota - CSQ"]);
+  const residualOther = findPoolRow(product, q, ["Other countries"]);
+  const residualFtaOther = findPoolRow(product, q, ["FTA Quota – Other countries", "FTA Quota - Other countries"]);
+
+  let sections = [];
+
+  if (shouldShowCountrySpecific(row)) {
+    sections.push(`
+      <div class="access-item">
+        <div class="access-title">Primary quota</div>
+        <div class="access-main">Country-specific quota · ${fmtTonnes(row.allocation)}</div>
+        <div class="access-sub">Single displayed total for the country-specific quota; MFN and FTA parts stay in the backend. Order number: ${row.orderNumber || '—'}.</div>
+      </div>
+    `);
+  } else {
+    sections.push(`
+      <div class="access-item">
+        <div class="access-title">Selected quota pool</div>
+        <div class="access-main">${row.country} · ${fmtTonnes(row.allocation)}</div>
+        <div class="access-sub">Order number: ${row.orderNumber || '—'}.</div>
+      </div>
+    `);
+  }
+
+  if (shouldShowCountrySpecific(row) && additionalRow) {
+    sections.push(`
+      <div class="access-item">
+        <div class="access-title">Additional access</div>
+        <div class="access-main">FTA Quota – CSQ · ${fmtTonnes(additionalRow.allocation)}</div>
+        <div class="access-sub">Available only after exhaustion of the respective country-specific quota.</div>
+      </div>
+    `);
+  }
+
+  if (shouldShowCountrySpecific(row)) {
+    const residualParts = [];
+    if (residualOther) residualParts.push(`<div class="access-main">Other countries · ${fmtTonnes(residualOther.allocation)}</div><div class="access-sub">FCFS residual access.</div>`);
+    if (residualFtaOther) residualParts.push(`<div class="access-main">FTA Quota – Other countries · ${fmtTonnes(residualFtaOther.allocation)}</div><div class="access-sub">Residual FTA access or specific FTA residual quota where applicable.</div>`);
+    if (residualParts.length) {
+      sections.push(`
+        <div class="access-item">
+          <div class="access-title">Residual access</div>
+          ${residualParts.join('')}
+        </div>
+      `);
+    }
+  }
+
+  const details = `
+    <div class="detail-grid">
+      <div class="detail-card"><div class="detail-label">Quarter</div><div class="detail-value mono">${row.quarter}</div></div>
+      <div class="detail-card"><div class="detail-label">Additional duty</div><div class="detail-value mono">${fmtDuty(row.dutyRate)}</div></div>
+      <div class="detail-card"><div class="detail-label">YoY change</div><div class="detail-value mono">${fmtYoY(row.yoy)}</div></div>
+      <div class="detail-card"><div class="detail-label">Compare quarter</div><div class="detail-value mono">${row.compareQuarter || '—'}</div></div>
+    </div>
+  `;
+
+  els.drawerSubtitle.textContent = `${row.productNo} · ${displayCountry(row.country)} · ${row.quarter}`;
+  document.getElementById('drawerTitle').textContent = row.product;
+  els.drawerBody.innerHTML = `<div class="access-stack">${sections.join('')}</div>${details}${row.notes ? `<div class="detail-card"><div class="detail-label">Notes</div><div>${row.notes}</div></div>` : ''}`;
+  els.drawer.classList.add('open');
+  els.drawerBackdrop.classList.add('open');
+  els.drawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeDrawer(){
+  els.drawer.classList.remove('open');
+  els.drawerBackdrop.classList.remove('open');
+  els.drawer.setAttribute('aria-hidden', 'true');
+}
+
+function renderTable(rows) {
+  els.resultCount.textContent = String(rows.length);
+  els.tableBody.innerHTML = rows.map(row => `
+    <tr data-id="${row.id}">
+      <td>${row.product}</td>
+      <td class="mono">${row.quarter}</td>
+      <td><div class="country-cell"><span>${displayCountry(row.country)}</span>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ''}</div></td>
+      <td class="mono">${fmtTonnes(row.allocation)}</td>
+      <td><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td>
+      <td class="mono">${fmtDuty(row.dutyRate)}</td>
+      <td class="mono">${row.orderNumber || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderKPIs(rows) {
+  els.kpiRows.textContent = String(rows.length);
+  const selectedQuarter = state.quarter === 'All quarters' ? defaultQuarter() : state.quarter;
+  const nextQ = nextQuarter(selectedQuarter);
+  const currentRows = baseRowsForQuarter(selectedQuarter);
+  const nextRows = nextQ ? baseRowsForQuarter(nextQ) : [];
+  const currentTotal = currentRows.reduce((sum, row) => sum + (Number(row.allocation) || 0), 0);
+  const nextTotal = nextRows.reduce((sum, row) => sum + (Number(row.allocation) || 0), 0);
+  els.currentQuarterLabel.textContent = `${selectedQuarter} total`;
+  els.nextQuarterLabel.textContent = `${nextQ || 'Next quarter'} total`;
+  els.kpiCurrent.textContent = fmtTonnes(currentTotal);
+  els.kpiNext.textContent = fmtTonnes(nextTotal);
+  els.kpiChanges.textContent = String(rows.filter(r => r.accessChange).length);
+  renderTop5(els.currentTop5, currentRows);
+  renderTop5(els.nextTop5, nextRows);
+}
+
+function refreshFilters() {
+  fillSelect(els.productFilter, uniqueValues('product', 'All product categories'), state.product);
+  fillSelect(els.quarterFilter, ['All quarters', ...availableQuarters()], state.quarter);
+  fillSelect(els.countryFilter, uniqueValues('country', 'All countries / quota pools'), state.country);
+}
+
+function render() {
+  const rows = sortedRows(filteredRows());
+  renderTable(rows);
+  renderKPIs(rows);
+}
+
+async function init() {
+  const res = await fetch('./data.json');
+  dataset = await res.json();
+  document.documentElement.setAttribute('data-theme', state.theme);
+  state.quarter = defaultQuarter();
+  refreshFilters();
+  render();
+
+  els.productFilter.addEventListener('change', e => { state.product = e.target.value; refreshFilters(); render(); });
+  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; render(); });
+  els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
+
+  document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.sort;
+    if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    else { state.sortKey = key; state.sortDir = 'desc'; }
+    render();
+  }));
+
+  els.tableBody.addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    const row = dataset.find(r => String(r.id) === tr.dataset.id);
+    if (row) openDrawer(row);
+  });
+
+  [els.currentTop5, els.nextTop5].forEach(el => el.addEventListener('click', e => {
+    const btn = e.target.closest('[data-id]');
+    if (!btn) return;
+    const row = dataset.find(r => String(r.id) === btn.dataset.id);
+    if (row) openDrawer(row);
+  }));
+
+  els.drawerBackdrop.addEventListener('click', closeDrawer);
+  els.drawerClose.addEventListener('click', closeDrawer);
+  els.themeToggle.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', state.theme);
+  });
+}
+
+init();

@@ -1,1 +1,111 @@
-<!doctype html><html lang="en" data-theme="light"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>EU Safeguard Quota Dashboard</title><meta name="description" content="Interactive dashboard for EU steel safeguard quota allocations." /><link rel="preconnect" href="https://api.fontshare.com" /><link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" /><link rel="stylesheet" href="./styles.css" /></head><body><div class="app"><header class="topbar"><div class="brand"><div class="logo">QS</div><div><h1>EU Safeguard Quota Dashboard</h1><p>Allocated quota, YoY comparison, and access-path changes</p></div></div><div class="top-actions"><button id="themeToggle" class="btn" type="button">Dark mode</button><button id="resetFilters" class="btn primary" type="button">Reset filters</button></div></header><main class="main"><section class="card"><div class="section-head"><div><h2>Filters</h2><p>Product category, quarter, and country / quota pool remain peer-level selectors.</p></div><div id="resultCount" class="muted">0 rows</div></div><div class="filters"><div class="field"><label for="productFilter">Product category</label><select id="productFilter"></select></div><div class="field"><label for="quarterFilter">Quarter</label><select id="quarterFilter"></select></div><div class="field"><label for="countryFilter">Country / quota pool</label><select id="countryFilter"></select></div></div></section><section class="kpis"><article class="card kpi"><div class="kpi-label">Filtered rows</div><div class="kpi-value mono" id="kpiRows">0</div><div class="muted">Current filter result count</div></article><article class="card kpi"><div class="kpi-label">Current quarter total</div><div class="kpi-value mono" id="kpiCurrent">0 t</div><div class="muted">Sum of current-quarter allocations</div></article><article class="card kpi"><div class="kpi-label">Next quarter total</div><div class="kpi-value mono" id="kpiNext">0 t</div><div class="muted">Sum of next-quarter allocations</div></article><article class="card kpi"><div class="kpi-label">Structure-change rows</div><div class="kpi-value mono" id="kpiChanges">0</div><div class="muted">Rows marked with access-change badges</div></article></section><section class="two-col"><article class="card"><div class="section-head"><div><h2>Current quarter</h2><p>Top 5 by allocated quota</p></div><div id="currentQuarterLabel" class="muted"></div></div><div id="currentTop5" class="rank-list"></div></article><article class="card"><div class="section-head"><div><h2>Next quarter</h2><p>Top 5 by allocated quota</p></div><div id="nextQuarterLabel" class="muted"></div></div><div id="nextTop5" class="rank-list"></div></article></section><section class="card"><div class="section-head"><div><h2>Detailed allocations</h2><p>Sort, scan, and click a row to open the detail panel.</p></div><div class="muted">Badge appears only when quota access is not directly comparable year over year.</div></div><div class="table-wrap"><table><thead><tr><th><button class="sort-btn" data-sort="product">Product category</button></th><th><button class="sort-btn" data-sort="quarter">Quarter</button></th><th><button class="sort-btn" data-sort="country">Country / quota pool</button></th><th><button class="sort-btn" data-sort="allocation">Allocated quota</button></th><th><button class="sort-btn" data-sort="yoy">YoY change</button></th><th><button class="sort-btn" data-sort="duty">Additional duty</button></th><th><button class="sort-btn" data-sort="order">Order number</button></th></tr></thead><tbody id="tableBody"></tbody></table></div></section><section class="card" id="methodology"><div class="section-head"><div><h2>Methodology</h2><p>Professional definitions without changing your homepage terminology.</p></div></div><div class="method-grid"><div class="method-item"><h3>YoY change</h3><p>Compare the same product category, quarter, and country / quota pool against the prior-year quarter only when the quota path is comparable.</p></div><div class="method-item"><h3>Access-change badge</h3><p>Show a badge only when the access basis changes, such as a new quota pool, an added or removed country-specific quota, or another structure change that makes direct YoY comparison misleading.</p></div><div class="method-item"><h3>Quota-pool tooltip</h3><p>Keep an asterisk on FTA Quota CSQ, FTA Quota Other countries, and Other countries. You can put Annex eligibility wording in the tooltip.</p></div><div class="method-item"><h3>Data source</h3><p>This site reads from a local <code>data.json</code>. After that, your GitHub update is usually just replacing the JSON file.</p></div></div></section></main></div><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="drawer" class="drawer" aria-hidden="true"><div class="drawer-head"><div><h2 id="drawerTitle">Allocation detail</h2><p id="drawerSubtitle" class="muted"></p></div><button id="closeDrawer" class="btn" type="button">Close</button></div><div id="drawerBody" class="drawer-body"></div></aside><script src="./app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EU Steel Quota Viewer</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">EU</div>
+      <div>
+        <h1>EU Steel Quota Viewer</h1>
+        <p>Country / quota pool allocations by product and quarter.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="themeToggle" type="button">Toggle theme</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Filters</h2>
+          <p class="muted">Product category, quarter, and country / quota pool remain peer-level selectors.</p>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="field"><label for="productFilter">Product category</label><select id="productFilter"></select></div>
+        <div class="field"><label for="quarterFilter">Quarter</label><select id="quarterFilter"></select></div>
+        <div class="field"><label for="countryFilter">Country / quota pool</label><select id="countryFilter"></select></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-label" id="kpiRowsLabel">Rows</div><div class="kpi-value mono" id="kpiRows">0</div></div>
+        <div class="kpi"><div class="kpi-label" id="currentQuarterLabel">Current quarter total</div><div class="kpi-value mono" id="kpiCurrent">0 mt</div></div>
+        <div class="kpi"><div class="kpi-label" id="nextQuarterLabel">Next quarter total</div><div class="kpi-value mono" id="kpiNext">0 mt</div></div>
+        <div class="kpi"><div class="kpi-label">Access-change rows</div><div class="kpi-value mono" id="kpiChanges">0</div></div>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <div class="card">
+        <div class="section-head"><div><h2>Current quarter</h2><p class="muted">Top 5 by allocated quota</p></div></div>
+        <div id="currentTop5" class="rank-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><div><h2>Next quarter</h2><p class="muted">Top 5 by allocated quota</p></div></div>
+        <div id="nextTop5" class="rank-list"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Detailed allocations</h2>
+          <p class="muted">Sort, scan, and click a row to open the detail panel.</p>
+        </div>
+        <div class="muted"><span id="resultCount">0</span> results</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><button class="sort-btn" data-sort="product">Product</button></th>
+              <th><button class="sort-btn" data-sort="quarter">Quarter</button></th>
+              <th><button class="sort-btn" data-sort="country">Country / quota pool</button></th>
+              <th><button class="sort-btn" data-sort="allocation">Allocation</button></th>
+              <th><button class="sort-btn" data-sort="yoy">YoY</button></th>
+              <th><button class="sort-btn" data-sort="duty">Additional duty</button></th>
+              <th><button class="sort-btn" data-sort="order">Order number</button></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><div><h2>Methodology</h2><p class="muted">Professional definitions without changing your homepage terminology.</p></div></div>
+      <div class="method-grid">
+        <div class="method-item"><h3>YoY change</h3><p>Compare the same product category, quarter, and country / quota pool against the prior-year quarter only when the quota path is comparable.</p></div>
+        <div class="method-item"><h3>Access-change badge</h3><p>Show a badge only when the access basis changes, such as a new quota pool, an added or removed country-specific quota, or another structure change that makes direct YoY comparison misleading.</p></div>
+        <div class="method-item"><h3>Quota-pool tooltip</h3><p>Keep an asterisk on FTA Quota CSQ, FTA Quota Other countries, and Other countries. Annex-based eligibility wording can sit in the tooltip.</p></div>
+        <div class="method-item"><h3>Data source</h3><p>This site reads from a local <code>data.json</code>. Your GitHub update is usually just replacing the JSON file.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <h2 id="drawerTitle">Details</h2>
+        <p id="drawerSubtitle" class="muted"></p>
+      </div>
+      <button class="btn" id="drawerClose" type="button">Close</button>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+  </aside>
+
+  <script src="./app.js"></script>
+</body>
+</html>
