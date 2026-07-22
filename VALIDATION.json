@@ -1,0 +1,15 @@
+{
+  "validation": {
+    "display_quarters": [
+      "2026-Q3",
+      "2026-Q4",
+      "2027-Q1",
+      "2027-Q2"
+    ],
+    "display_rows": 556,
+    "products": 13,
+    "yoy_populated": 212,
+    "no_historical_rows_in_frontend": true,
+    "annex_policy": "Shared-pool access is intentionally not inferred. No shared pool is shown for a country unless an explicit Annex product-country eligibility matrix is supplied."
+  }
+}
