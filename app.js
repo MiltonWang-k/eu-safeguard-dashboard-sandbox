@@ -1,10 +1,332 @@
-const state={product:"All product categories",quarter:"All quarters",country:"All countries",sortKey:"allocation",sortDir:"desc",theme:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"};let dataset=[];const $=id=>document.getElementById(id),els={productFilter:$("productFilter"),quarterFilter:$("quarterFilter"),countryFilter:$("countryFilter"),tableBody:$("tableBody"),resultCount:$("resultCount"),kpiRows:$("kpiRows"),kpiCurrent:$("kpiCurrent"),kpiNext:$("kpiNext"),kpiChanges:$("kpiChanges"),currentTop5:$("currentTop5"),nextTop5:$("nextTop5"),currentQuarterLabel:$("currentQuarterLabel"),nextQuarterLabel:$("nextQuarterLabel"),drawer:$("drawer"),drawerBackdrop:$("drawerBackdrop"),drawerBody:$("drawerBody"),drawerSubtitle:$("drawerSubtitle"),themeToggle:$("themeToggle"),drawerClose:$("drawerClose")};
-const POOLS=new Set(["Other countries","FTA Quota – Other countries","FTA Quota - Other countries","FTA Quota – CSQ","FTA Quota - CSQ"]),FLAGS={"Türkiye":"tr","Japan":"jp","India":"in","Taiwan":"tw","Ukraine":"ua","Korea":"kr","Viet Nam":"vn","Egypt":"eg","Serbia":"rs","Brazil":"br","United Kingdom":"gb","Indonesia":"id","Australia":"au","Saudi Arabia":"sa","Switzerland":"ch","Kazakhstan":"kz","North Macedonia":"mk","United States":"us","China":"cn","South Africa":"za","Singapore":"sg","Malaysia":"my","United Arab Emirates":"ae","Algeria":"dz","Moldova":"md","Argentina":"ar","Israel":"il"},ANNEX={"csq": {"Brazil": ["24"], "Egypt": ["1.A", "13", "16"], "India": ["1.A", "10", "14", "15", "2", "20", "22", "25.A", "26", "4.A", "4.B", "5", "6", "7", "8", "9"], "Indonesia": ["7", "8"], "Korea": ["1.A", "10", "12", "15", "2", "22", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"], "North Macedonia": ["12", "20", "21", "7"], "South Africa": ["10", "8", "9"], "Switzerland": ["12", "14", "16", "17", "26", "27"], "Türkiye": ["1.A", "12", "13", "16", "17", "19", "2", "20", "21", "25.A", "25.B", "26", "27", "28", "3.A", "4.A", "4.B", "5", "6", "8", "9"], "Ukraine": ["1.A", "13", "16", "2", "21", "22", "24", "27", "28"], "United Kingdom": ["1.B", "12", "14", "15", "16", "17", "18", "19", "2", "20", "21", "25.B", "26", "3.A", "4.B", "5", "6", "7"]}, "otherExcluded": {"Algeria": ["13", "25.B"], "Australia": ["1.A"], "Brazil": ["1.A", "24"], "China": ["1.B", "10", "12", "13", "14", "15", "18", "19", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.B", "6", "8", "9"], "Egypt": ["1.A", "13", "16"], "India": ["1.A", "10", "14", "15", "2", "20", "22", "25.A", "26", "4.A", "4.B", "5", "6", "7", "8", "9"], "Indonesia": ["1.A", "7", "8"], "Israel": ["25.A"], "Japan": ["1.A", "1.B", "15", "2", "3.A", "7"], "Kazakhstan": ["1.A"], "Korea": ["1.A", "10", "12", "15", "2", "22", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"], "Malaysia": ["16"], "Moldova": ["13", "16"], "North Macedonia": ["1.A", "12", "20", "21", "7"], "Saudi Arabia": ["1.A"], "Serbia": ["1.A", "6"], "South Africa": ["10", "8", "9"], "Switzerland": ["1.A", "12", "14", "16", "17", "26", "27"], "Taiwan": ["1.A", "15", "2", "26", "3.B", "4.A", "5", "8", "9"], "Türkiye": ["1.A", "12", "13", "16", "17", "19", "2", "20", "21", "25.A", "25.B", "26", "27", "28", "3.A", "4.A", "4.B", "5", "6", "8", "9"], "Ukraine": ["1.A", "13", "16", "2", "21", "22", "24", "27", "28"], "United Arab Emirates": ["17", "18", "20"], "United Kingdom": ["1.A", "1.B", "12", "14", "15", "16", "17", "18", "19", "2", "20", "21", "25.B", "26", "3.A", "4.B", "5", "6", "7"], "United States": ["1.B"], "Viet Nam": ["1.A", "16", "3.B", "4.A", "5", "9"]}, "ftaOther": {"Brazil": ["1.B", "10", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"], "Egypt": ["1.B", "10", "14", "15", "17", "18", "19", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "5", "6", "7", "8", "9"], "India": ["1.B", "12", "13", "16", "17", "18", "19", "21", "24", "25.B", "27", "28", "3.A", "3.B"], "Indonesia": ["1.B", "10", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "6", "9"], "Israel": ["1.A", "1.B", "10", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "21", "22", "24", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"], "Japan": ["10", "12", "13", "14", "17", "18", "19", "20", "21", "24", "25.A", "25.B", "26", "27", "28", "4.B", "5", "8", "9"], "Korea": ["1.B", "13", "14", "18", "19", "20", "21", "24", "25.A", "25.B", "26", "27", "28", "3.A"], "Moldova": ["1.A", "1.B", "10", "12", "14", "15", "17", "18", "19", "2", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"], "North Macedonia": ["1.B", "10", "13", "14", "15", "16", "17", "18", "19", "2", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "6", "8", "9"], "Serbia": ["1.B", "10", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "7", "8", "9"], "Singapore": ["1.A", "1.B", "10", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "21", "22", "25.A", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "7", "8", "9"], "South Africa": ["1.A", "1.B", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.B", "5", "6", "7"], "Switzerland": ["1.B", "10", "13", "15", "18", "19", "20", "22", "24", "25.A", "25.B", "28", "3.A", "3.B", "4.A", "5", "6", "7", "8"], "Türkiye": ["1.B", "10", "14", "15", "18", "22", "24", "3.B"], "Ukraine": ["1.B", "10", "12", "14", "15", "17", "18", "19", "20", "25.A", "25.B", "26", "3.A", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"], "United Kingdom": ["10", "13", "22", "24", "25.A", "27", "28", "3.B", "8", "9"], "Viet Nam": ["1.B", "10", "12", "13", "14", "15", "17", "18", "19", "2", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "4.B", "6", "7", "8"], "All other FTA partners": ["1.A", "1.B", "10", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "21", "22", "24", "25.A", "25.B", "26", "27", "28", "3.A", "3.B", "4.A", "4.B", "5", "6", "7", "8", "9"]}, "specificFta": {"Argentina": ["24"], "Brazil": ["1.A", "12", "2"], "Egypt": ["12", "2", "4.A", "4.B"], "Indonesia": ["1.A"], "Japan": ["16", "22", "3.B", "4.A", "6"], "Korea": ["16", "17"], "North Macedonia": ["1.A", "5"], "Singapore": ["24", "25.B", "26", "6"], "South Africa": ["4.A"], "Switzerland": ["1.A", "2", "21", "4.B", "9"], "Türkiye": ["7"], "United Kingdom": ["1.A", "4.A"]}};
-const esc=x=>String(x??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"),pool=x=>POOLS.has(x),pn=x=>(String(x).match(/^\d+(?:\.[A-Z])?/)||[x])[0],ok=(s,c,p)=>ANNEX[s]?.[c]?.includes(pn(p)),ton=x=>new Intl.NumberFormat("en-US",{maximumFractionDigits:2}).format(+x||0)+" mt",duty=x=>{let n=+x;if(isNaN(n))return"—";n=n<=1?n*100:n;return n.toFixed(n%1?1:0)+"%"},yoy=x=>x==null?"—":(x>0?"+":"")+(+x).toFixed(1)+"%",name=x=>pool(x)?esc(x):FLAGS[x]?`<span class="country-name"><img class="country-flag" src="https://flagcdn.com/${FLAGS[x]}.svg" width="22" height="16" alt="" loading="lazy">${esc(x)}</span>`:esc(x);
-const qs=()=>[...new Set(dataset.map(x=>x.quarter))].sort(),next=q=>{let m=/^(\d+)-Q(\d)$/.exec(q||"");return !m?null:+m[2]===4?`${+m[1]+1}-Q1`:`${m[1]}-Q${+m[2]+1}`};
-function options(el,a,v){el.innerHTML=a.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");el.value=a.includes(v)?v:a[0];return el.value}function refresh(){state.product=options(els.productFilter,["All product categories",...new Set(dataset.map(x=>x.product))],state.product);state.quarter=options(els.quarterFilter,["All quarters",...qs()],state.quarter);let a=["All countries",...[...new Set(dataset.filter(x=>(state.product==="All product categories"||x.product===state.product)&&(state.quarter==="All quarters"||x.quarter===state.quarter)&&!pool(x.country)&&x.legalType!=="northern-ireland").map(x=>x.country))].sort()];els.countryFilter.innerHTML=a.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");els.countryFilter.value=state.country;if(els.countryFilter.value!==state.country)els.countryFilter.insertAdjacentHTML("beforeend",`<option value="${esc(state.country)}">${esc(state.country)} (no allocation)</option>`)}
-const base=x=>(state.product==="All product categories"||x.product===state.product)&&(state.country==="All countries"||x.country===state.country), rows=()=>dataset.filter(x=>base(x)&&(state.quarter==="All quarters"||x.quarter===state.quarter)),rq=q=>dataset.filter(x=>base(x)&&x.quarter===q),find=(p,q,a)=>dataset.find(x=>x.product===p&&x.quarter===q&&a.includes(x.country));
-function cards(el,a){a=a.filter(x=>!pool(x.country)&&x.legalType!=="northern-ireland").sort((x,y)=>y.allocation-x.allocation).slice(0,5);el.innerHTML=a.length?a.map((x,i)=>`<button class="rank-card" type="button" data-id="${x.id}"><div class="rank-top"><div><div class="rank-title">${i+1}. ${name(x.country)}</div><div class="rank-meta">${esc(x.product)} · ${x.quarter}</div></div><div class="rank-title mono">${ton(x.allocation)}</div></div><div class="rank-meta">${esc(x.quotaPool)} · Duty ${duty(x.dutyRate)}</div></button>`).join(""):`<div class="rank-card"><div class="rank-title">No country allocations</div></div>`}
-function item(t,m,s){return`<div class="access-item"><div class="access-title">${t}</div><div class="access-main">${m}</div>${s?`<div class="access-sub">${s}</div>`:""}</div>`}function drawer(x){let p=x.product,q=x.quarter,c=x.country,csq=find(p,q,["FTA Quota – CSQ","FTA Quota - CSQ"]),other=find(p,q,["Other countries"]),fta=find(p,q,["FTA Quota – Other countries","FTA Quota - Other countries"]),primary=dataset.find(z=>z.product===p&&z.quarter===q&&z.country===c&&z.legalType==="country-specific"),specific=dataset.find(z=>z.product===p&&z.quarter===q&&z.country===c&&z.legalType==="specific-fta-residual"),s=[];if(pool(c))s.push(item("Selected quota pool",`${esc(c)} · ${ton(x.allocation)}`,`Order number: ${esc(x.orderNumber||"—")}.`));else{if(primary)s.push(item("Primary quota",`Country-specific quota · ${ton(primary.allocation)}`,`Order number: ${esc(primary.orderNumber||"—")}. Accessible as one single country-specific quota.`));if(specific)s.push(item("Residual access",`FTA Quota – Other countries (specific quota) · ${ton(specific.allocation)}`,`Order number: ${esc(specific.orderNumber||"—")}. Specific quota under Annex II.5.`));if(!primary&&!specific)s.push(item("Selected allocation",ton(x.allocation),`Order number: ${esc(x.orderNumber||"—")}.`));if(csq&&primary&&ok("csq",c,p))s.push(item("Additional access",`FTA Quota – CSQ · ${ton(csq.allocation)}`,"Available only after exhaustion of the respective country-specific quota."));let r=[];if(other&&!ok("otherExcluded",c,p))r.push(`Other countries · ${ton(other.allocation)}`);if(fta&&ok("ftaOther",c,p)&&!specific)r.push(`FTA Quota – Other countries · ${ton(fta.allocation)}`);if(r.length)s.push(item("Residual access",r.join("<br>"),"Residual pool access on a first-come, first-served basis; shown separately and not combined with the country-specific quota."))}$('drawerTitle').innerHTML=name(c);els.drawerSubtitle.textContent=p;let prior=x.priorAllocation!=null?`${esc(x.compareQuarter)} · ${ton(x.priorAllocation)}`:"—";els.drawerBody.innerHTML=`<div class="access-stack">${s.join("")}</div><div class="detail-grid"><div class="detail-card"><div class="detail-label">Quarter</div><div class="detail-value mono">${q}</div></div><div class="detail-card"><div class="detail-label">Additional duty</div><div class="detail-value mono">${duty(x.dutyRate)}</div></div><div class="detail-card"><div class="detail-label">YoY change</div><div class="detail-value mono">${yoy(x.yoy)}</div></div><div class="detail-card"><div class="detail-label">Prior-year allocation</div><div class="detail-value mono">${prior}</div></div></div>`;els.drawer.classList.add("open");els.drawerBackdrop.classList.add("open")}
-function render(){let a=rows().sort((x,y)=>{let l=state.sortKey==="duty"?+x.dutyRate:state.sortKey==="yoy"?(x.yoy??-999):x[state.sortKey],r=state.sortKey==="duty"?+y.dutyRate:state.sortKey==="yoy"?(y.yoy??-999):y[state.sortKey];return(typeof l==="number"?l-r:String(l).localeCompare(String(r)))*(state.sortDir==="asc"?1:-1)});els.resultCount.textContent=a.length;els.tableBody.innerHTML=a.map(x=>`<tr data-id="${x.id}"><td>${esc(x.product)}</td><td>${x.quarter}</td><td><div class="country-cell">${name(x.country)}</div></td><td class="mono">${ton(x.allocation)}</td><td><span class="badge ${x.yoy>0?"up":x.yoy<0?"down":"neutral"}">${yoy(x.yoy)}</span></td><td class="mono">${duty(x.dutyRate)}</td><td>${esc(x.orderNumber||"—")}</td></tr>`).join("");let q=state.quarter==="All quarters"?qs()[0]:state.quarter,n=next(q),cur=rq(q),nxt=rq(n);els.kpiRows.textContent=a.length;els.currentQuarterLabel.textContent=`${q} total`;els.nextQuarterLabel.textContent=n?`${n} total`:"Next quarter total";els.kpiCurrent.textContent=ton(cur.reduce((s,x)=>s+(+x.allocation||0),0));els.kpiNext.textContent=ton(nxt.reduce((s,x)=>s+(+x.allocation||0),0));els.kpiChanges.textContent=a.filter(x=>x.accessChange).length;cards(els.currentTop5,cur);cards(els.nextTop5,nxt)}
-async function init(){try{let r=await fetch("./data.json",{cache:"no-store"});if(!r.ok)throw Error(`data.json returned ${r.status}`);dataset=await r.json();document.documentElement.setAttribute("data-theme",state.theme);state.quarter=qs()[0]||"2026-Q3";refresh();render();els.productFilter.onchange=e=>{state.product=e.target.value;refresh();render()};els.quarterFilter.onchange=e=>{state.quarter=e.target.value;refresh();render()};els.countryFilter.onchange=e=>{state.country=e.target.value;render()};document.querySelectorAll(".sort-btn").forEach(b=>b.onclick=()=>{state.sortDir=state.sortKey===b.dataset.sort&&state.sortDir==="desc"?"asc":"desc";state.sortKey=b.dataset.sort;render()});[els.tableBody,els.currentTop5,els.nextTop5].forEach(el=>el.onclick=e=>{let tr=e.target.closest("[data-id]"),x=tr&&dataset.find(z=>String(z.id)===tr.dataset.id);if(x)drawer(x)});els.drawerClose.onclick=els.drawerBackdrop.onclick=()=>{els.drawer.classList.remove("open");els.drawerBackdrop.classList.remove("open")};els.themeToggle.onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",state.theme)}}catch(e){document.querySelector("main").insertAdjacentHTML("afterbegin",`<div class="status-message"><strong>Data could not be loaded.</strong><br>${esc(e.message)}. Confirm data.json is deployed beside index.html.</div>`);console.error(e)}}init();
+
+const state = {
+  product: "All product categories",
+  quarter: "All quarters",
+  country: "All countries / quota pools",
+  sortKey: "allocation",
+  sortDir: "desc",
+  theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+};
+
+let dataset = [];
+
+const els = {
+  productFilter: document.getElementById("productFilter"),
+  quarterFilter: document.getElementById("quarterFilter"),
+  countryFilter: document.getElementById("countryFilter"),
+  tableBody: document.getElementById("tableBody"),
+  resultCount: document.getElementById("resultCount"),
+  kpiRows: document.getElementById("kpiRows"),
+  kpiCurrent: document.getElementById("kpiCurrent"),
+  kpiNext: document.getElementById("kpiNext"),
+  kpiChanges: document.getElementById("kpiChanges"),
+  currentTop5: document.getElementById("currentTop5"),
+  nextTop5: document.getElementById("nextTop5"),
+  currentQuarterLabel: document.getElementById("currentQuarterLabel"),
+  nextQuarterLabel: document.getElementById("nextQuarterLabel"),
+  drawer: document.getElementById("drawer"),
+  drawerBackdrop: document.getElementById("drawerBackdrop"),
+  drawerBody: document.getElementById("drawerBody"),
+  drawerSubtitle: document.getElementById("drawerSubtitle"),
+  themeToggle: document.getElementById("themeToggle"),
+  drawerClose: document.getElementById("drawerClose")
+};
+
+const POOL_NAMES = new Set([
+  "Other countries",
+  "FTA Quota – Other countries",
+  "FTA Quota - Other countries",
+  "FTA Quota – CSQ",
+  "FTA Quota - CSQ"
+]);
+
+const flagMap = {
+  "Türkiye":"🇹🇷","Japan":"🇯🇵","India":"🇮🇳","Taiwan":"🇹🇼","Ukraine":"🇺🇦","Korea":"🇰🇷","Viet Nam":"🇻🇳","Egypt":"🇪🇬","Serbia":"🇷🇸",
+  "Brazil":"🇧🇷","United Kingdom":"🇬🇧","Indonesia":"🇮🇩","Australia":"🇦🇺","Saudi Arabia":"🇸🇦","Switzerland":"🇨🇭","Kazakhstan":"🇰🇿","North Macedonia":"🇲🇰",
+  "United States":"🇺🇸","China":"🇨🇳","South Africa":"🇿🇦","Singapore":"🇸🇬","Malaysia":"🇲🇾","United Arab Emirates":"🇦🇪","Algeria":"🇩🇿","Moldova":"🇲🇩"
+};
+
+const fmtTonnes = value => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value || 0)} mt`;
+const fmtYoY = value => value === null || value === undefined || Number.isNaN(value) ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+const badgeClass = value => !value ? "" : /removed|changed/i.test(value) ? "structure" : "neutral";
+const yoyClass = value => value === null || value === undefined ? "neutral" : value > 0 ? "up" : value < 0 ? "down" : "neutral";
+const uniqueValues = (key, label) => [label, ...new Set(dataset.map(row => row[key]).filter(Boolean))];
+const isPool = name => POOL_NAMES.has(name);
+const displayCountry = name => isPool(name) ? name : `${flagMap[name] || "🌍"} ${name}`;
+const normalizePool = value => String(value || '').replace(/–/g,'-').trim();
+
+function fmtDuty(value){
+  if (value === null || value === undefined || value === '') return '—';
+  const raw = String(value).trim();
+  if (raw.endsWith('%')) return raw;
+  const n = Number(raw);
+  if (Number.isNaN(n)) return raw;
+  return `${(n <= 1 ? n * 100 : n).toFixed(((n <= 1 ? n * 100 : n) % 1) ? 1 : 0)}%`;
+}
+
+function parseQuarter(q){
+  const m = /^([0-9]{4})-Q([1-4])$/.exec(String(q || ''));
+  if (!m) return null;
+  return {year:Number(m[1]), quarter:Number(m[2])};
+}
+function nextQuarter(q){
+  const p = parseQuarter(q);
+  if (!p) return null;
+  return p.quarter === 4 ? `${p.year + 1}-Q1` : `${p.year}-Q${p.quarter + 1}`;
+}
+function availableQuarters(){
+  return [...new Set(dataset.map(r => r.quarter))].sort((a,b)=>{
+    const pa=parseQuarter(a), pb=parseQuarter(b);
+    if(!pa || !pb) return String(a).localeCompare(String(b));
+    return pa.year - pb.year || pa.quarter - pb.quarter;
+  });
+}
+function defaultQuarter(){
+  const qs = availableQuarters();
+  return qs[0] || '2026-Q3';
+}
+
+function fillSelect(element, values, current) {
+  const safe = value => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  element.innerHTML = values.map(value => `<option value="${safe(value)}">${safe(value)}</option>`).join('');
+  element.value = values.includes(current) ? current : values[0];
+  return element.value;
+}
+
+function filteredRows() {
+  return dataset.filter(row =>
+    (state.product === "All product categories" || row.product === state.product) &&
+    (state.quarter === "All quarters" || row.quarter === state.quarter) &&
+    (state.country === "All countries / quota pools" || row.country === state.country)
+  );
+}
+
+function baseRowsForQuarter(quarter){
+  return dataset.filter(row =>
+    (state.product === "All product categories" || row.product === state.product) &&
+    row.quarter === quarter &&
+    (state.country === "All countries / quota pools" || row.country === state.country)
+  );
+}
+
+function sortedRows(rows) {
+  const direction = state.sortDir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const values = {
+      product: [a.product, b.product],
+      quarter: [a.quarter, b.quarter],
+      country: [a.country, b.country],
+      allocation: [a.allocation, b.allocation],
+      yoy: [a.yoy ?? -999, b.yoy ?? -999],
+      duty: [Number(String(a.dutyRate).replace('%','')) || 0, Number(String(b.dutyRate).replace('%','')) || 0],
+      order: [a.orderNumber || "", b.orderNumber || ""]
+    };
+    const [left, right] = values[state.sortKey];
+    return typeof left === "number" && typeof right === "number"
+      ? (left - right) * direction
+      : String(left).localeCompare(String(right)) * direction;
+  });
+}
+
+function renderTop5(container, rows) {
+  if (!rows.length) {
+    container.innerHTML = `<div class="rank-card"><div class="rank-title">No data</div><div class="rank-meta">No allocations for this quarter.</div></div>`;
+    return;
+  }
+  const top = [...rows].sort((a,b)=>b.allocation-a.allocation).slice(0,5);
+  container.innerHTML = top.map((row, idx) => `
+    <button class="rank-card" type="button" data-id="${row.id}">
+      <div class="rank-top">
+        <div>
+          <div class="rank-title">${idx + 1}. ${displayCountry(row.country)}</div>
+          <div class="rank-meta">${row.productNo} · ${row.quarter}</div>
+        </div>
+        <div class="rank-title mono">${fmtTonnes(row.allocation)}</div>
+      </div>
+      <div class="rank-meta">${row.quotaPool} · Duty ${fmtDuty(row.dutyRate)}</div>
+    </button>
+  `).join('');
+}
+
+function sameProductQuarter(row, quarter){
+  return dataset.filter(r => r.product === row.product && r.quarter === quarter);
+}
+
+function findPoolRow(product, quarter, poolNames){
+  const names = Array.isArray(poolNames) ? poolNames : [poolNames];
+  return dataset.find(r => r.product === product && r.quarter === quarter && names.some(n => normalizePool(r.country) === normalizePool(n)));
+}
+
+function shouldShowCountrySpecific(row){
+  return !isPool(row.country);
+}
+
+function openDrawer(row) {
+  const q = row.quarter;
+  const product = row.product;
+  const allThisQuarter = sameProductQuarter(row, q);
+  const additionalRow = findPoolRow(product, q, ["FTA Quota – CSQ", "FTA Quota - CSQ"]);
+  const residualOther = findPoolRow(product, q, ["Other countries"]);
+  const residualFtaOther = findPoolRow(product, q, ["FTA Quota – Other countries", "FTA Quota - Other countries"]);
+
+  let sections = [];
+
+  if (shouldShowCountrySpecific(row)) {
+    sections.push(`
+      <div class="access-item">
+        <div class="access-title">Primary quota</div>
+        <div class="access-main">Country-specific quota · ${fmtTonnes(row.allocation)}</div>
+        <div class="access-sub">Single displayed total for the country-specific quota; MFN and FTA parts stay in the backend. Order number: ${row.orderNumber || '—'}.</div>
+      </div>
+    `);
+  } else {
+    sections.push(`
+      <div class="access-item">
+        <div class="access-title">Selected quota pool</div>
+        <div class="access-main">${row.country} · ${fmtTonnes(row.allocation)}</div>
+        <div class="access-sub">Order number: ${row.orderNumber || '—'}.</div>
+      </div>
+    `);
+  }
+
+  if (shouldShowCountrySpecific(row) && additionalRow) {
+    sections.push(`
+      <div class="access-item">
+        <div class="access-title">Additional access</div>
+        <div class="access-main">FTA Quota – CSQ · ${fmtTonnes(additionalRow.allocation)}</div>
+        <div class="access-sub">Available only after exhaustion of the respective country-specific quota.</div>
+      </div>
+    `);
+  }
+
+  if (shouldShowCountrySpecific(row)) {
+    const residualParts = [];
+    if (residualOther) residualParts.push(`<div class="access-main">Other countries · ${fmtTonnes(residualOther.allocation)}</div><div class="access-sub">FCFS residual access.</div>`);
+    if (residualFtaOther) residualParts.push(`<div class="access-main">FTA Quota – Other countries · ${fmtTonnes(residualFtaOther.allocation)}</div><div class="access-sub">Residual FTA access or specific FTA residual quota where applicable.</div>`);
+    if (residualParts.length) {
+      sections.push(`
+        <div class="access-item">
+          <div class="access-title">Residual access</div>
+          ${residualParts.join('')}
+        </div>
+      `);
+    }
+  }
+
+  const details = `
+    <div class="detail-grid">
+      <div class="detail-card"><div class="detail-label">Quarter</div><div class="detail-value mono">${row.quarter}</div></div>
+      <div class="detail-card"><div class="detail-label">Additional duty</div><div class="detail-value mono">${fmtDuty(row.dutyRate)}</div></div>
+      <div class="detail-card"><div class="detail-label">YoY change</div><div class="detail-value mono">${fmtYoY(row.yoy)}</div></div>
+      <div class="detail-card"><div class="detail-label">Compare quarter</div><div class="detail-value mono">${row.compareQuarter || '—'}</div></div>
+    </div>
+  `;
+
+  document.getElementById('drawerTitle').textContent = `${displayCountry(row.country)} — ${row.product}`;
+  els.drawerSubtitle.textContent = row.quarter;
+  els.drawerBody.innerHTML = `<div class="access-stack">${sections.join('')}</div>${details}${row.notes ? `<div class="detail-card"><div class="detail-label">Notes</div><div>${row.notes}</div></div>` : ''}`;
+  els.drawer.classList.add('open');
+  els.drawerBackdrop.classList.add('open');
+  els.drawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeDrawer(){
+  els.drawer.classList.remove('open');
+  els.drawerBackdrop.classList.remove('open');
+  els.drawer.setAttribute('aria-hidden', 'true');
+}
+
+function renderTable(rows) {
+  els.resultCount.textContent = String(rows.length);
+  els.tableBody.innerHTML = rows.map(row => `
+    <tr data-id="${row.id}">
+      <td>${row.product}</td>
+      <td class="mono">${row.quarter}</td>
+      <td><div class="country-cell"><span>${displayCountry(row.country)}</span>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ''}</div></td>
+      <td class="mono">${fmtTonnes(row.allocation)}</td>
+      <td><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td>
+      <td class="mono">${fmtDuty(row.dutyRate)}</td>
+      <td class="mono">${row.orderNumber || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderKPIs(rows) {
+  els.kpiRows.textContent = String(rows.length);
+  const selectedQuarter = state.quarter === 'All quarters' ? defaultQuarter() : state.quarter;
+  const nextQ = nextQuarter(selectedQuarter);
+  const currentRows = baseRowsForQuarter(selectedQuarter);
+  const nextRows = nextQ ? baseRowsForQuarter(nextQ) : [];
+  const currentTotal = currentRows.reduce((sum, row) => sum + (Number(row.allocation) || 0), 0);
+  const nextTotal = nextRows.reduce((sum, row) => sum + (Number(row.allocation) || 0), 0);
+  els.currentQuarterLabel.textContent = `${selectedQuarter} total`;
+  els.nextQuarterLabel.textContent = `${nextQ || 'Next quarter'} total`;
+  els.kpiCurrent.textContent = fmtTonnes(currentTotal);
+  els.kpiNext.textContent = fmtTonnes(nextTotal);
+  els.kpiChanges.textContent = String(rows.filter(r => r.accessChange).length);
+  renderTop5(els.currentTop5, currentRows);
+  renderTop5(els.nextTop5, nextRows);
+}
+
+function availableCountriesForMainFilters() {
+  return ['All countries / quota pools', ...new Set(dataset
+    .filter(row => (state.product === 'All product categories' || row.product === state.product) && (state.quarter === 'All quarters' || row.quarter === state.quarter))
+    .map(row => row.country).filter(Boolean))];
+}
+
+function refreshFilters() {
+  state.product = fillSelect(els.productFilter, uniqueValues('product', 'All product categories'), state.product);
+  state.quarter = fillSelect(els.quarterFilter, ['All quarters', ...availableQuarters()], state.quarter);
+  const countries = availableCountriesForMainFilters();
+  if (!countries.includes(state.country)) state.country = 'All countries / quota pools';
+  state.country = fillSelect(els.countryFilter, countries, state.country);
+}
+
+function render() {
+  const rows = sortedRows(filteredRows());
+  renderTable(rows);
+  renderKPIs(rows);
+}
+
+async function init() {
+  const res = await fetch('./data.json');
+  dataset = await res.json();
+  document.documentElement.setAttribute('data-theme', state.theme);
+  state.quarter = defaultQuarter();
+  refreshFilters();
+  render();
+
+  els.productFilter.addEventListener('change', e => { state.product = e.target.value; refreshFilters(); render(); });
+  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; refreshFilters(); render(); });
+  els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
+
+  document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.sort;
+    if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    else { state.sortKey = key; state.sortDir = 'desc'; }
+    render();
+  }));
+
+  els.tableBody.addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    const row = dataset.find(r => String(r.id) === tr.dataset.id);
+    if (row) openDrawer(row);
+  });
+
+  [els.currentTop5, els.nextTop5].forEach(el => el.addEventListener('click', e => {
+    const btn = e.target.closest('[data-id]');
+    if (!btn) return;
+    const row = dataset.find(r => String(r.id) === btn.dataset.id);
+    if (row) openDrawer(row);
+  }));
+
+  els.drawerBackdrop.addEventListener('click', closeDrawer);
+  els.drawerClose.addEventListener('click', closeDrawer);
+  els.themeToggle.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', state.theme);
+  });
+}
+
+init();
