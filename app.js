@@ -40,19 +40,21 @@ const POOL_NAMES = new Set([
   "FTA Quota - CSQ"
 ]);
 
-const flagMap = {
-  "Türkiye":"🇹🇷","Japan":"🇯🇵","India":"🇮🇳","Taiwan":"🇹🇼","Ukraine":"🇺🇦","Korea":"🇰🇷","Viet Nam":"🇻🇳","Egypt":"🇪🇬","Serbia":"🇷🇸",
-  "Brazil":"🇧🇷","United Kingdom":"🇬🇧","Indonesia":"🇮🇩","Australia":"🇦🇺","Saudi Arabia":"🇸🇦","Switzerland":"🇨🇭","Kazakhstan":"🇰🇿","North Macedonia":"🇲🇰",
-  "United States":"🇺🇸","China":"🇨🇳","South Africa":"🇿🇦","Singapore":"🇸🇬","Malaysia":"🇲🇾","United Arab Emirates":"🇦🇪","Algeria":"🇩🇿","Moldova":"🇲🇩"
-};
-
+const flagMap={"Australia":"au","Brazil":"br","China":"cn","Egypt":"eg","India":"in","Indonesia":"id","Japan":"jp","Kazakhstan":"kz","Korea":"kr","North Macedonia":"mk","Saudi Arabia":"sa","Serbia":"rs","Singapore":"sg","South Africa":"za","Switzerland":"ch","Taiwan":"tw","Türkiye":"tr","Ukraine":"ua","United Kingdom":"gb","United Kingdom (to Northern Ireland from other parts of the United Kingdom)":"gb","United States":"us","Viet Nam":"vn"};
+const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const flag=n=>flagMap[n]?`<img class="flag" src="./flags/${flagMap[n]}.svg" width="24" height="18" alt="">`:'';
 const fmtTonnes = value => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value || 0)} mt`;
 const fmtYoY = value => value === null || value === undefined || Number.isNaN(value) ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 const badgeClass = value => !value ? "" : /removed|changed/i.test(value) ? "structure" : "neutral";
 const yoyClass = value => value === null || value === undefined ? "neutral" : value > 0 ? "up" : value < 0 ? "down" : "neutral";
 const uniqueValues = (key, label) => [label, ...new Set(dataset.map(row => row[key]).filter(Boolean))];
+function availableCountriesForMainFilters() {
+  return ["All countries / quota pools", ...new Set(dataset
+    .filter(row => (state.product === "All product categories" || row.product === state.product) && (state.quarter === "All quarters" || row.quarter === state.quarter))
+    .map(row => row.country).filter(Boolean))];
+}
 const isPool = name => POOL_NAMES.has(name);
-const displayCountry = name => isPool(name) ? name : `${flagMap[name] || "🌍"} ${name}`;
+const displayCountry = name => isPool(name) ? esc(name) : `${flag(name)}${esc(name)}`;
 const normalizePool = value => String(value || '').replace(/–/g,'-').trim();
 
 function fmtDuty(value){
@@ -86,12 +88,7 @@ function defaultQuarter(){
   return qs[0] || '2026-Q3';
 }
 
-function fillSelect(element, values, current) {
-  const safe = value => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  element.innerHTML = values.map(value => `<option value="${safe(value)}">${safe(value)}</option>`).join('');
-  element.value = values.includes(current) ? current : values[0];
-  return element.value;
-}
+function fillSelect(element, values, current) { const safe=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); element.innerHTML=values.map(v=>`<option value="${safe(v)}">${safe(v)}</option>`).join(''); element.value=values.includes(current)?current:values[0]; return element.value; }
 
 function filteredRows() {
   return dataset.filter(row =>
@@ -128,12 +125,14 @@ function sortedRows(rows) {
   });
 }
 
+function priorYear(q){ const m=/^(\d{4})-Q([1-4])$/.exec(q); return m?`${+m[1]-1}-Q${m[2]}`:null; }
+function calcYoY(row){ if(row.yoy!==null&&row.yoy!==undefined)return row.yoy; const p=dataset.find(x=>x.product===row.product&&x.country===row.country&&x.quarter===priorYear(row.quarter)); return p&&Number(p.allocation)?((row.allocation-p.allocation)/p.allocation)*100:null; }
 function renderTop5(container, rows) {
   if (!rows.length) {
     container.innerHTML = `<div class="rank-card"><div class="rank-title">No data</div><div class="rank-meta">No allocations for this quarter.</div></div>`;
     return;
   }
-  const top = [...rows].sort((a,b)=>b.allocation-a.allocation).slice(0,5);
+  const top = [...rows].filter(row=>!isPool(row.country)).sort((a,b)=>b.allocation-a.allocation).slice(0,5);
   container.innerHTML = top.map((row, idx) => `
     <button class="rank-card" type="button" data-id="${row.id}">
       <div class="rank-top">
@@ -176,7 +175,7 @@ function openDrawer(row) {
       <div class="access-item">
         <div class="access-title">Primary quota</div>
         <div class="access-main">Country-specific quota · ${fmtTonnes(row.allocation)}</div>
-        <div class="access-sub">Single displayed total for the country-specific quota; MFN and FTA parts stay in the backend. Order number: ${row.orderNumber || '—'}.</div>
+        <div class="access-sub">Order number: ${row.orderNumber || '—'}.</div>
       </div>
     `);
   } else {
@@ -213,16 +212,21 @@ function openDrawer(row) {
     }
   }
 
+  sections.push(`<div class="access-item"><div class="access-title">Notes</div><div class="access-sub">${esc(row.notes || (isPool(row.country) ? 'Shared quota pool. Eligibility follows the applicable Annex rules.' : 'Country-specific quota shown as a single total; MFN and FTA parts remain in the underlying data.'))}</div></div>`);
   const details = `
     <div class="detail-grid">
       <div class="detail-card"><div class="detail-label">Quarter</div><div class="detail-value mono">${row.quarter}</div></div>
       <div class="detail-card"><div class="detail-label">Additional duty</div><div class="detail-value mono">${fmtDuty(row.dutyRate)}</div></div>
-      <div class="detail-card"><div class="detail-label">YoY change</div><div class="detail-value mono">${fmtYoY(row.yoy)}</div></div>
+      <div class="detail-card"><div class="detail-label">YoY change</div><div class="detail-value mono">${fmtYoY(calcYoY(row))}</div></div>
       <div class="detail-card"><div class="detail-label">Compare quarter</div><div class="detail-value mono">${row.compareQuarter || '—'}</div></div>
     </div>
   `;
 
-  document.getElementById('drawerTitle').textContent = `${displayCountry(row.country)} — ${row.product}`;
+  document.getElementById('drawerTitle').innerHTML = `
+    <div style="display:grid;gap:4px">
+      <div style="font-size:1.08rem;font-weight:700">${displayCountry(row.country)}</div>
+      <div style="font-size:.9rem;font-weight:500;color:var(--muted)">${esc(row.product)}</div>
+    </div>`;
   els.drawerSubtitle.textContent = row.quarter;
   els.drawerBody.innerHTML = `<div class="access-stack">${sections.join('')}</div>${details}${row.notes ? `<div class="detail-card"><div class="detail-label">Notes</div><div>${row.notes}</div></div>` : ''}`;
   els.drawer.classList.add('open');
@@ -240,13 +244,13 @@ function renderTable(rows) {
   els.resultCount.textContent = String(rows.length);
   els.tableBody.innerHTML = rows.map(row => `
     <tr data-id="${row.id}">
-      <td>${row.product}</td>
-      <td class="mono">${row.quarter}</td>
-      <td><div class="country-cell"><span>${displayCountry(row.country)}</span>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ''}</div></td>
-      <td class="mono">${fmtTonnes(row.allocation)}</td>
-      <td><span class="badge ${yoyClass(row.yoy)}">${fmtYoY(row.yoy)}</span></td>
-      <td class="mono">${fmtDuty(row.dutyRate)}</td>
-      <td class="mono">${row.orderNumber || '—'}</td>
+      <td data-label="Product">${esc(row.product)}</td>
+      <td data-label="Quarter" class="mono">${row.quarter}</td>
+      <td data-label="Country / quota pool"><div class="country-cell"><span>${displayCountry(row.country)}</span>${row.accessChange ? `<span class="badge ${badgeClass(row.accessChange)}">${row.accessChange}</span>` : ''}</div></td>
+      <td data-label="Allocation" class="mono">${fmtTonnes(row.allocation)}</td>
+      <td data-label="YoY"><span class="badge ${yoyClass(calcYoY(row))}">${fmtYoY(calcYoY(row))}</span></td>
+      <td data-label="Additional duty" class="mono">${fmtDuty(row.dutyRate)}</td>
+      <td data-label="Order number" class="mono">${row.orderNumber || '—'}</td>
     </tr>
   `).join('');
 }
@@ -268,18 +272,12 @@ function renderKPIs(rows) {
   renderTop5(els.nextTop5, nextRows);
 }
 
-function availableCountriesForMainFilters() {
-  return ['All countries / quota pools', ...new Set(dataset
-    .filter(row => (state.product === 'All product categories' || row.product === state.product) && (state.quarter === 'All quarters' || row.quarter === state.quarter))
-    .map(row => row.country).filter(Boolean))];
-}
-
 function refreshFilters() {
-  state.product = fillSelect(els.productFilter, uniqueValues('product', 'All product categories'), state.product);
-  state.quarter = fillSelect(els.quarterFilter, ['All quarters', ...availableQuarters()], state.quarter);
-  const countries = availableCountriesForMainFilters();
-  if (!countries.includes(state.country)) state.country = 'All countries / quota pools';
-  state.country = fillSelect(els.countryFilter, countries, state.country);
+  state.product = fillSelect(els.productFilter, uniqueValues("product", "All product categories"), state.product);
+  state.quarter = fillSelect(els.quarterFilter, ["All quarters", ...availableQuarters()], state.quarter);
+  const options = availableCountriesForMainFilters();
+  if (state.country !== 'All countries / quota pools' && !options.includes(state.country)) options.push(state.country);
+  state.country = fillSelect(els.countryFilter, options, state.country);
 }
 
 function render() {
@@ -289,14 +287,13 @@ function render() {
 }
 
 async function init() {
-  const res = await fetch('./data.json');
-  dataset = await res.json();
+  const res = await fetch('./data.json', {cache:'no-store'}); if(!res.ok) throw new Error(`HTTP ${res.status}`); dataset = await res.json(); if(!Array.isArray(dataset)||!dataset.length) throw new Error('Invalid data.json');
   document.documentElement.setAttribute('data-theme', state.theme);
   state.quarter = defaultQuarter();
   refreshFilters();
   render();
 
-  els.productFilter.addEventListener('change', e => { state.product = e.target.value; refreshFilters(); render(); });
+  els.productFilter.addEventListener('change', e => { state.product = e.target.value; state.quarter = 'All quarters'; refreshFilters(); render(); });
   els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; refreshFilters(); render(); });
   els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
 
