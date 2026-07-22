@@ -92,12 +92,19 @@ function defaultQuarter(){
 }
 
 function fillSelect(element, values, current) {
-  const safe = value => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  element.innerHTML = values.map(value => `<option value="${safe(value)}">${safe(value)}</option>`).join("");
+  const safe = value =>
+    String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  element.innerHTML = values
+    .map(value => `<option value="${safe(value)}">${safe(value)}</option>`)
+    .join("");
+
   element.value = values.includes(current) ? current : values[0];
   return element.value;
-}">${value}</option>`).join('');
-  element.value = current;
 }
 
 function filteredRows() {
