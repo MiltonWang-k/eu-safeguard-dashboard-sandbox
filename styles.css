@@ -10,70 +10,23 @@
 .country-card-title{display:grid;gap:4px}.country-card-name{font-size:1.12rem;font-weight:700}.country-card-product{font-size:.92rem;color:var(--muted)}
 @media (max-width:720px){.main{padding:12px;gap:12px}.card{padding:14px}.filters,.two-col,.method-grid,.detail-grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{padding:10px;border:1px solid color-mix(in srgb,var(--border) 70%,transparent);border-radius:12px;background:var(--surface-2)}.kpi-value{font-size:1.35rem}.drawer{width:100vw;border-left:0}.drawer-head,.drawer-body{padding:16px}table{min-width:720px}}
 @media (max-width:380px){.kpis{grid-template-columns:1fr}}
+/* EU Safeguard Dashboard — Top 5 + footer refinement */
+.rank-top { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.rank-top > div:first-child { grid-column: 1 / 3; }
+.rank-top > div:last-child { grid-column: 3; justify-self: end; text-align: right; white-space: nowrap; }
+.rank-title { min-width: 0; }
 
+.site-footer { margin-top: 8px; padding: 0; text-align: center; color: var(--text); }
+.site-footer .footer-disclaimer { background: color-mix(in srgb, var(--primary) 10%, var(--surface)); border-top: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border)); border-bottom: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border)); color: var(--text); padding: 18px clamp(16px, 4vw, 40px); font-size: .94rem; line-height: 1.55; }
+.site-footer .footer-disclaimer strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+.site-footer .footer-maintainer { background: color-mix(in srgb, var(--warning) 13%, var(--surface)); color: var(--text); padding: 20px 16px 24px; font-size: clamp(1rem, .92rem + .35vw, 1.16rem); font-weight: 700; letter-spacing: .01em; }
+.site-footer .footer-maintainer span { color: var(--primary); }
 
-/* Layout redesign: readable allocation cards and balanced desktop rhythm. */
-body { font-size: 16px; }
-.main { width: min(100%, 1440px); margin-inline: auto; padding: 28px clamp(16px, 3vw, 40px) 48px; }
-.card { border-radius: 18px; }
-.rank-list { gap: 12px; }
-.rank-card { width: 100%; text-align: left; font: inherit; color: var(--text); min-height: 116px; padding: 18px 20px; }
-.rank-card:hover { border-color: color-mix(in srgb, var(--primary) 42%, var(--border)); background: color-mix(in srgb, var(--primary) 4%, var(--surface-2)); }
-.rank-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; }
-.rank-title { font-size: 1.06rem; line-height: 1.35; overflow-wrap: anywhere; }
-.rank-top > div:last-child { font-size: 1.25rem; line-height: 1.25; white-space: nowrap; text-align: right; }
-.rank-meta { font-size: .95rem; line-height: 1.45; margin-top: 2px; text-align: left; overflow-wrap: anywhere; }
-.rank-top + .rank-meta { margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
-.country-name { gap: 9px; font-weight: 700; }
-.country-flag { width: 24px; height: 17px; }
-.two-col > .card { min-width: 0; }
-@media (min-width: 1080px) {
-  .two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-  .two-col .card { padding: 24px; }
-  .rank-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rank-card { min-height: 134px; }
-}
-
-/* Phone-native composition; no desktop table or undersized centered cards. */
 @media (max-width: 720px) {
-  html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-  body { font-size: 16px; }
-  .topbar { position: static; padding: 16px; align-items: flex-start; flex-direction: column; gap: 14px; }
-  .brand { width: 100%; align-items: flex-start; gap: 10px; }
-  .logo { width: 36px; height: 36px; flex: 0 0 auto; }
-  .brand h1 { font-size: 1.2rem; }
-  .brand p { font-size: .9rem; line-height: 1.4; }
-  .top-actions { width: 100%; }
-  .top-actions .btn { width: 100%; min-height: 48px; }
-  .main { width: 100%; padding: 14px 12px 32px; gap: 14px; }
-  .card { width: 100%; min-width: 0; padding: 16px; border-radius: 16px; }
-  .filters, .two-col, .method-grid, .detail-grid { grid-template-columns: minmax(0, 1fr) !important; min-width: 0; }
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; min-width: 0; }
-  .kpi { padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid color-mix(in srgb,var(--border) 70%,transparent); }
-  .kpi-label { font-size: .82rem; line-height: 1.3; }
-  .kpi-value { font-size: 1.35rem; line-height: 1.15; }
-  .section-head { align-items: flex-start; gap: 8px; margin-bottom: 14px; }
-  .section-head h2 { font-size: 1.18rem; }
-  .section-head .muted { font-size: .92rem; }
-  .field label { font-size: 1rem; }
-  .field select { width: 100%; min-height: 50px; font-size: 16px; }
-  .rank-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  .rank-card { min-height: 0; padding: 16px; border-radius: 16px; }
-  .rank-top { gap: 12px; grid-template-columns: minmax(0, 1fr) auto; }
-  .rank-title { font-size: 1.1rem; line-height: 1.35; }
-  .rank-top > div:last-child { font-size: 1.22rem; max-width: 116px; white-space: normal; text-align: right; }
-  .rank-meta { font-size: .96rem; line-height: 1.45; }
-  .rank-top + .rank-meta { margin-top: 12px; padding-top: 12px; }
-  .country-flag { width: 23px; height: 16px; }
-  .table-wrap { overflow: visible; }
-  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; width: 100%; min-width: 0 !important; }
-  .table-wrap thead { display: none; }
-  .table-wrap tr { margin-bottom: 12px; padding: 5px 14px; border: 1px solid color-mix(in srgb,var(--border) 70%,transparent); border-radius: 14px; background: var(--surface-2); }
-  .table-wrap td { display: grid; grid-template-columns: minmax(112px,.86fr) minmax(0,1.3fr); gap: 12px; padding: 11px 0; border-bottom: 1px solid color-mix(in srgb,var(--border) 55%,transparent); overflow-wrap: anywhere; }
-  .table-wrap td:last-child { border-bottom: 0; }
-  .table-wrap td::before { color: var(--muted); font-size: .82rem; font-weight: 700; line-height: 1.35; }
-  .table-wrap td:nth-child(1)::before { content: "Product category"; }.table-wrap td:nth-child(2)::before { content: "Quarter"; }.table-wrap td:nth-child(3)::before { content: "Country / quota pool"; }.table-wrap td:nth-child(4)::before { content: "Allocated quota"; }.table-wrap td:nth-child(5)::before { content: "YoY"; }.table-wrap td:nth-child(6)::before { content: "Additional duty"; }.table-wrap td:nth-child(7)::before { content: "Order number"; }
-  .drawer { width: 100vw; border-left: 0; }.drawer-head,.drawer-body { padding: 18px 16px; }
-  .site-footer { padding: 20px 12px 30px; }
+  .rank-top { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .rank-top > div:first-child { grid-column: 1; }
+  .rank-top > div:last-child { grid-column: 2; max-width: none; font-size: 1.2rem; white-space: nowrap; }
+  .rank-title { font-size: 1.1rem; }
+  .site-footer .footer-disclaimer { padding: 18px 16px; font-size: .94rem; }
+  .site-footer .footer-maintainer { padding: 20px 16px 26px; font-size: 1.08rem; }
 }
-@media (max-width: 374px) { .kpis { grid-template-columns: 1fr !important; } .rank-top > div:last-child { max-width: 96px; font-size: 1.1rem; } .table-wrap td { grid-template-columns: 1fr; gap: 4px; } }
