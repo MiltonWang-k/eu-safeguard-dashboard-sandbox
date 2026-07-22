@@ -42,7 +42,7 @@ const POOL_NAMES = new Set([
 
 const flagMap={"Australia":"au","Brazil":"br","China":"cn","Egypt":"eg","India":"in","Indonesia":"id","Japan":"jp","Kazakhstan":"kz","Korea":"kr","North Macedonia":"mk","Saudi Arabia":"sa","Serbia":"rs","Singapore":"sg","South Africa":"za","Switzerland":"ch","Taiwan":"tw","Türkiye":"tr","Ukraine":"ua","United Kingdom":"gb","United Kingdom (to Northern Ireland from other parts of the United Kingdom)":"gb","United States":"us","Viet Nam":"vn"};
 const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const flag=n=>flagMap[n]?`<img class="flag" src="./flags/${flagMap[n]}.svg" width="24" height="18" alt="">`:'';
+const flag=n=>flagMap[n]?`<img class="flag" src="./flags/${flagMap[n]}.svg" width="24" height="18" alt="" style="display:inline-block;vertical-align:-3px;margin-right:6px;border-radius:2px">`:'';
 const fmtTonnes = value => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value || 0)} mt`;
 const fmtYoY = value => value === null || value === undefined || Number.isNaN(value) ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 const badgeClass = value => !value ? "" : /removed|changed/i.test(value) ? "structure" : "neutral";
@@ -138,7 +138,8 @@ function renderTop5(container, rows) {
       <div class="rank-top">
         <div>
           <div class="rank-title">${idx + 1}. ${displayCountry(row.country)}</div>
-          <div class="rank-meta">${row.productNo} · ${row.quarter}</div>
+          <div class="rank-meta" style="font-weight:600;color:var(--text)">${esc(row.product)}</div>
+          <div class="rank-meta">${row.quarter}</div>
         </div>
         <div class="rank-title mono">${fmtTonnes(row.allocation)}</div>
       </div>
@@ -222,11 +223,7 @@ function openDrawer(row) {
     </div>
   `;
 
-  document.getElementById('drawerTitle').innerHTML = `
-    <div style="display:grid;gap:4px">
-      <div style="font-size:1.08rem;font-weight:700">${displayCountry(row.country)}</div>
-      <div style="font-size:.9rem;font-weight:500;color:var(--muted)">${esc(row.product)}</div>
-    </div>`;
+  document.getElementById('drawerTitle').innerHTML = `<div style="display:grid;gap:4px"><div style="font-size:1.08rem;font-weight:700">${displayCountry(row.country)}</div><div style="font-size:.9rem;font-weight:500;color:var(--muted)">${esc(row.product)}</div></div>`;
   els.drawerSubtitle.textContent = row.quarter;
   els.drawerBody.innerHTML = `<div class="access-stack">${sections.join('')}</div>${details}${row.notes ? `<div class="detail-card"><div class="detail-label">Notes</div><div>${row.notes}</div></div>` : ''}`;
   els.drawer.classList.add('open');
