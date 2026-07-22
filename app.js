@@ -286,8 +286,8 @@ async function init() {
   refreshFilters();
   render();
 
-  els.productFilter.addEventListener('change', e => { state.product = e.target.value; render(); });
-  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; render(); });
+  els.productFilter.addEventListener('change', e => { state.product = e.target.value; state.quarter = 'All quarters'; state.country = 'All countries / quota pools'; refreshFilters(); render(); });
+  els.quarterFilter.addEventListener('change', e => { state.quarter = e.target.value; state.country = 'All countries / quota pools'; refreshFilters(); render(); });
   els.countryFilter.addEventListener('change', e => { state.country = e.target.value; render(); });
 
   document.querySelectorAll('[data-sort]').forEach(btn => btn.addEventListener('click', () => {
